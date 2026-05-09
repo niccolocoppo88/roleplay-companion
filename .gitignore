@@ -1,6 +1,10 @@
 node_modules/
 dist/
-dist-electron/
+.venv/
+__pycache__/
+*.pyc
+.env
 *.log
 .DS_Store
-*.local
+electron/python/__pycache__/
+electron/python/*.pyc
