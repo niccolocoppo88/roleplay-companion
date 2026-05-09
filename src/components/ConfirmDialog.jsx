@@ -1,33 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-export default function ConfirmDialog({ title, message, confirmLabel = 'Elimina', onConfirm, onCancel }) {
-  const [loading, setLoading] = useState(false);
-
-  async function handleConfirm() {
-    setLoading(true);
-    try {
-      await onConfirm();
-    } finally {
-      setLoading(false);
-    }
-  }
-
+export default function ConfirmDialog({ title, message, onConfirm, onCancel }) {
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-bg-secondary border border-border-primary rounded-lg w-full max-w-sm p-6">
-        <h2 className="text-lg font-bold text-text-primary mb-2">{title}</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
+      <div className="relative card border-accent-danger/50 max-w-sm w-full mx-4 p-6">
+        <h3 className="text-lg font-semibold text-text-primary mb-2">{title}</h3>
         <p className="text-text-secondary text-sm mb-6">{message}</p>
-        <div className="flex gap-3">
-          <button
-            onClick={handleConfirm}
-            disabled={loading}
-            className="btn btn-danger flex-1 disabled:opacity-50"
-          >
-            {loading ? 'Eliminazione...' : confirmLabel}
-          </button>
-          <button onClick={onCancel} disabled={loading} className="btn btn-secondary flex-1">
-            Annulla
-          </button>
+        <div className="flex justify-end gap-3">
+          <button onClick={onCancel} className="btn btn-secondary">Annulla</button>
+          <button onClick={onConfirm} className="btn btn-danger">Conferma</button>
         </div>
       </div>
     </div>

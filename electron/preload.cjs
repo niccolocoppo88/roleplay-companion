@@ -18,4 +18,14 @@ const characters = {
   delete: (id)         => ipcRenderer.invoke('db:characters:delete', id),
 };
 
+// ─── Meet API channels ─────────────────────────────────────────────────────────
+const meet = {
+  join:   (opts)        => ipcRenderer.invoke('meet:join', opts),
+  status: (sessionId)   => ipcRenderer.invoke('meet:status', sessionId),
+  stop:   (sessionId)   => ipcRenderer.invoke('meet:stop', sessionId),
+  transcript: (sessId)  => ipcRenderer.invoke('meet:transcript', sessId),
+  listSessions: ()      => ipcRenderer.invoke('meet:list-sessions'),
+};
+
 contextBridge.exposeInMainWorld('db', { campaigns, characters });
+contextBridge.exposeInMainWorld('meetAPI', meet);

@@ -66,6 +66,28 @@ const MIGRATIONS = [
         ON characters(campaign_id);
     `,
   },
+  {
+    version: 2,
+    name: 'sessions_table',
+    up: `
+      CREATE TABLE IF NOT EXISTS sessions (
+        id           TEXT PRIMARY KEY,
+        campaign_id  TEXT NOT NULL,
+        character_id TEXT,
+        title        TEXT DEFAULT '',
+        meet_url     TEXT DEFAULT '',
+        started_at   INTEGER,
+        ended_at     INTEGER,
+        status       TEXT DEFAULT 'pending',
+        created_at   INTEGER NOT NULL,
+        FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
+        FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE SET NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_sessions_campaign
+        ON sessions(campaign_id);
+    `,
+  },
 ];
 
 function runMigrations() {

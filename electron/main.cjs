@@ -2,8 +2,8 @@ const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const log = require('electron-log');
 const db = require('./database.cjs');
+const { registerMeetHandlers } = require('./ipc/meet.cjs');
 
-log.initialize();
 log.info('App starting...');
 
 let mainWindow = null;
@@ -38,7 +38,8 @@ app.whenReady().then(() => {
   db.runMigrations();
   db.prepareStatements();
   db.registerHandlers();
-  log.info('Database ready');
+  registerMeetHandlers();
+  log.info('Database and handlers ready');
   createWindow();
 
   app.on('activate', () => {
