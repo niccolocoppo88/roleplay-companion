@@ -88,6 +88,23 @@ const MIGRATIONS = [
         ON sessions(campaign_id);
     `,
   },
+  {
+    version: 3,
+    name: 'generated_contents_table',
+    up: `
+      CREATE TABLE IF NOT EXISTS generated_contents (
+        id           TEXT PRIMARY KEY,
+        character_id TEXT NOT NULL,
+        session_id   TEXT,
+        type         TEXT NOT NULL,
+        content      TEXT NOT NULL,
+        context      TEXT NOT NULL,
+        generated_at REAL NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_gc_character ON generated_contents(character_id);
+      CREATE INDEX IF NOT EXISTS idx_gc_session  ON generated_contents(session_id);
+    `,
+  },
 ];
 
 function runMigrations() {
@@ -141,7 +158,11 @@ const stmts = {
   insertCharacter: null,
   updateCharacter: null,
   deleteCharacter: null,
-};
+
+  // Generated Contents
+  listGenerated: null,
+  getGenerated: null,
+}
 
 function prepareStatements() {
   const database = openDatabase();
@@ -192,6 +213,17 @@ function prepareStatements() {
 
   stmts.deleteCharacter = database.prepare(`
     DELETE FROM characters WHERE id = ?
+  `);
+
+  // Generated Contents
+  stmts.listGenerated = database.prepare(`
+    SELECT * FROM generated_contents
+    WHERE character_id = ?
+    ORDER BY generated_at DESC
+  `);
+
+  stmts.getGenerated = database.prepare(`
+    SELECT * FROM generated_contents WHERE id = ?
   `);
 
   log.info('Prepared statements ready');
@@ -304,6 +336,27 @@ function registerHandlers() {
       return { ok: true };
     } catch (err) {
       log.error('db:characters:delete error', err);
+      return { ok: false, error: err.message };
+    }
+  });
+
+  // Generated Contents
+  ipcMain.handle('db:generated:list', (_, characterId) => {
+    try {
+      const rows = stmts.listGenerated.all(characterId);
+      return { ok: true, data: rows };
+    } catch (err) {
+      log.error('db:generated:list error', err);
+      return { ok: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('db:generated:get', (_, id) => {
+    try {
+      const row = stmts.getGenerated.get(id);
+      return { ok: true, data: row ?? null };
+    } catch (err) {
+      log.error('db:generated:get error', err);
       return { ok: false, error: err.message };
     }
   });

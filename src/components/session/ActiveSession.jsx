@@ -74,7 +74,7 @@ export default function ActiveSession({ campaignId, characterId, onSessionEnd })
       const res = await window.meetAPI.stop(sessionId);
       if (res.ok) {
         setStatus('ended');
-        onSessionEnd?.(sessionId);
+        onSessionEnd?.({ sessionId, campaignId, characterId });
       } else {
         setError(res.error || 'Errore durante la chiusura');
       }
@@ -83,7 +83,7 @@ export default function ActiveSession({ campaignId, characterId, onSessionEnd })
     } finally {
       setLoading(false);
     }
-  }, [sessionId, onSessionEnd]);
+  }, [sessionId, campaignId, characterId, onSessionEnd]);
 
   const formatElapsed = (seconds) => {
     const h = Math.floor(seconds / 3600);

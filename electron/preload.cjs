@@ -27,5 +27,11 @@ const meet = {
   listSessions: ()      => ipcRenderer.invoke('meet:list-sessions'),
 };
 
-contextBridge.exposeInMainWorld('db', { campaigns, characters });
+// ─── Generated Content channels ───────────────────────────────────────────────
+const generated = {
+  list: (characterId)  => ipcRenderer.invoke('db:generated:list', characterId),
+  get:  (id)          => ipcRenderer.invoke('db:generated:get', id),
+};
+
+contextBridge.exposeInMainWorld('db', { campaigns, characters, generated });
 contextBridge.exposeInMainWorld('meetAPI', meet);

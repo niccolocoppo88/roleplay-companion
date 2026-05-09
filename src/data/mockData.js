@@ -64,6 +64,29 @@ export const MOCK_CHARACTERS = [
       { id: 'note-2', date: '2026-04-19', category: 'dm', content: 'DM: il gruppo ha scoperto che la cripta è collegata al culto del drago nero. Preparare incontro con wyvern nel prossimo sessione.' },
       { id: 'note-3', date: '2026-05-01', category: 'loot', content: 'Trovato: Elisir di Resistenza al Freddo (1), Pozione di Cura (2), 150 monete d\'oro.' },
     ],
+    motivations: {
+      coreMotivation: 'Vendetta sacra — scoprire la verità sulla morte del mentore Sir Aldoran e distruggere il demone che lo ha ucciso, per dare pace alla sua anima.',
+      shortTermGoals: [
+        { id: 'mg-1', text: 'Indagare sulla torre del mage e scoprire la connessione col culto del drago nero', status: 'active', priority: 'high' },
+        { id: 'mg-2', text: 'Ritrovare il diario perduto di Sir Aldoran, contenente la sua ultima testimonianza', status: 'active', priority: 'medium' },
+        { id: 'mg-3', text: 'Proteggere il gruppo — specialmente Maron che si fida troppo dei forestieri', status: 'active', priority: 'medium' },
+      ],
+      longTermGoals: [
+        { id: 'mg-4', text: 'Sconfiggere il demone che ha ucciso Sir Aldoran e reclamare la sua arma leggendaria', status: 'pending', priority: 'critical' },
+        { id: 'mg-5', text: 'Riconquistare l\'onore dell\'Ordine del Sole d\'Argento — o crearne uno nuovo', status: 'pending', priority: 'high' },
+        { id: 'mg-6', text: 'Proteggere Valdros dalla minaccia del drago nero prima che distrugga il regno', status: 'pending', priority: 'high' },
+      ],
+      drivingValues: [
+        { id: 'dv-1', value: 'Onore', weight: 10, description: 'L\'onore è tutto. Un uomo senza onore è solo un cadavere che cammina.' },
+        { id: 'dv-2', value: 'Lealtà', weight: 9, description: 'Chi è mio alleato ha la mia lama al suo fianco, sempre.' },
+        { id: 'dv-3', value: 'Giustizia', weight: 8, description: 'Il bene deve trionfare sul male — non come идея, ma come azione concreta.' },
+      ],
+      externalPressures: [
+        { id: 'ep-1', pressure: 'Il culto del drago nero mi sta osservando — so che prima o poi verranno a prendermi', urgency: 'high' },
+        { id: 'ep-2', pressure: 'Il mio ex-ordine è stato screditato — molti credono fossimo traditori', urgency: 'medium' },
+        { id: 'ep-3', pressure: 'Torm mi ha mostrato una visione: se non agisco, Valdros cadrà entro un anno', urgency: 'critical' },
+      ],
+    },
     features: [
       { name: 'Sentiero del Devoto', description: 'Guadagni un livello di incantatore multi-classe in clerico. La tua voce sacra ti permette di lanciare spells.', source: 'Paladino' },
       { name: 'Scudo della Fede', description: 'Come azione, puoi invocare uno scudo invisibile che conferisce +2 CA fino a quando non ti muovi, attacchi o lanci un incantesimo.', source: 'Incantesimo' },
@@ -125,6 +148,16 @@ export const MOCK_CHARACTERS = [
         importance: 'medium',
       },
     ],
+    dreams: {
+      shortTerm: 'Trovare il Tempio dimenticato di Torm prima del prossimo ciclo lunare. Entro una settimana, voglio tornare a Thornhaven per vedere mia madre.',
+      longTerm: 'Sconfiggere il culto del Drago Nero e vendicare la morte di Sir Aldoran. Nel profondo, spero di trovare un erede degno a cui tramandare il mio dovere cavalleresco.',
+      hidden: 'A volte temo di non essere all\'altezza del mio mentore. Sogno di costruire un nuovo ordine cavalleresco, ma ho paura che la mia fede non sia abbastanza forte.',
+    },
+    fears: {
+      surface: 'Le creature non morte mi terrorizzano: la loro esistenza è una bestemmia contro l\'ordine naturale. Ho paura di deludere chi dipende da me e di essere visto come un traditore come il mio ordine è stato accusato di essere.',
+      deep: 'La morte del mio mentore Sir Aldoran mi perseguita — temo che la mia incapacità di salvarlo si ripeta con qualcun altro. Nel profondo, so che la mia fede vacilla quando Torm non risponde alle mie preghiere. Ho paura di scoprire che il culto del drago nero sia più antico e potente di quanto immaginassi.',
+      whatTheyAvoid: '**Comportamenti**: Evito di lasciarmi andare alla rabbia, perché so che porta alla crudeltà. Non parlo mai del mio passato con l\'Ordine del Sole d\'Argento — troppo doloroso e troppo rischioso.\n\n**Luoghi**: Le cripte e i cimiteri mi mettono profondamente a disagio. Fuggo da qualsiasi luogo associato alla magia dei demoni o del culto del drago nero. Non ritorno a Thornhaven, perché non sopporto l\'idea che la mia presenza porti pericolo alla mia famiglia.\n\n**Persone**: Mi tengo alla larga da chi pratica la necromanzia o qualsiasi forma di magia oscura. Non mi fido dei preti di dei oscuri o di coloro che servono il Drago Nero. Evito anche i membri del mio vecchio ordine — troppo complicated, troppi ricordi.',
+    },
     spellcasting: {
       class: 'Paladino',
       ability: 'carisma',

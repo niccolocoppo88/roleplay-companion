@@ -63,7 +63,7 @@ def parse_transcript(
         return []
 
     if max_lines is not None:
-        with p.open("r", encoding="utf-8", errors="replace") as fh:
+        with p.open("rb") as fh:
             lines = _tail_lines(fh, max_lines)
     else:
         with p.open("r", encoding="utf-8", errors="replace") as fh:
@@ -83,8 +83,8 @@ def _tail_lines(fh, n: int) -> list[str]:
     if file_size == 0:
         return []
 
+    chunks: list[bytes] = []
     remaining = n
-    buf = bytearray()
     pos = file_size
 
     while remaining > 0 and pos > 0:
@@ -92,10 +92,12 @@ def _tail_lines(fh, n: int) -> list[str]:
         pos -= step
         fh.seek(pos)
         chunk = fh.read(step)
-        buf[:0] = chunk
+        chunks.append(chunk)
         cr_count = chunk.count(b"\n") + chunk.count(b"\r")
         remaining -= cr_count
 
+    chunks.reverse()
+    buf = bytearray(b"".join(chunks))
     text = buf.decode("utf-8", errors="replace")
     all_lines = text.splitlines()
     if all_lines and not all_lines[0].endswith(("\n", "\r")):

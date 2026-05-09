@@ -4,6 +4,7 @@ import CampaignDashboard from './pages/CampaignDashboard';
 import CampaignDetail from './pages/CampaignDetail';
 import CharacterProfile from './pages/CharacterProfile';
 import ActiveSession from './components/session/ActiveSession';
+import SessionSummary from './components/session/SessionSummary';
 import CampaignModal from './components/CampaignModal';
 import ConfirmDialog from './components/ConfirmDialog';
 
@@ -17,6 +18,8 @@ function App() {
 
   // Active session state — lives at App level so it persists across nav
   const [activeSession, setActiveSession] = useState(null);
+  // Session summary shown after a session ends
+  const [sessionSummary, setSessionSummary] = useState(null);
 
   useEffect(() => {
     loadCampaigns();
@@ -121,6 +124,16 @@ function App() {
           onCancel={() => setDeleteTarget(null)}
         />
       )}
+
+      {/* Session Summary — shown after a session ends */}
+      {sessionSummary && (
+        <SessionSummary
+          sessionId={sessionSummary.sessionId}
+          campaignId={sessionSummary.campaignId}
+          characterId={sessionSummary.characterId}
+          onDone={() => setSessionSummary(null)}
+        />
+      )}
     </div>
   );
 }
@@ -163,7 +176,10 @@ function DashboardView({ campaigns, activeSession, setActiveSession, showCreate,
           <ActiveSession
             campaignId={activeSession.campaignId}
             characterId={activeSession.characterId}
-            onSessionEnd={() => setActiveSession(null)}
+            onSessionEnd={(data) => {
+              setActiveSession(null);
+              setSessionSummary(data);
+            }}
           />
         </div>
       )}

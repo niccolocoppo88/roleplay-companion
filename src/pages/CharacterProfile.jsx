@@ -6,6 +6,9 @@ import InventoryTab from '../components/profile/InventoryTab';
 import BiographyTab from '../components/profile/BiographyTab';
 import NotesTab from '../components/profile/NotesTab';
 import TimelineTab from '../components/profile/TimelineTab';
+import MotivationsTab from '../components/profile/MotivationsTab';
+import DreamsTab from '../components/profile/DreamsTab';
+import FearsTab from '../components/profile/FearsTab';
 
 const TABS = [
   { id: 'stats', label: 'Scheda', icon: '📋' },
@@ -13,6 +16,8 @@ const TABS = [
   { id: 'biography', label: 'Biografia', icon: '📖' },
   { id: 'notes', label: 'Note', icon: '📝' },
   { id: 'timeline', label: 'Timeline', icon: '⏳' },
+  { id: 'dreams', label: 'Sogni', icon: '✨' },
+  { id: 'fears', label: 'Paure', icon: '😨' },
 ];
 
 export default function CharacterProfile() {
@@ -113,8 +118,11 @@ export default function CharacterProfile() {
         {activeTab === 'stats' && <StatsTab character={character} />}
         {activeTab === 'inventory' && <InventoryTab inventory={character.inventory} />}
         {activeTab === 'biography' && <BiographyTab biography={character.biography} />}
+        {activeTab === 'motivations' && <MotivationsTab motivations={character.motivations} />}
         {activeTab === 'notes' && <NotesTab notes={character.notes} />}
         {activeTab === 'timeline' && <TimelineTab timeline={character.timeline} />}
+        {activeTab === 'dreams' && <DreamsTab dreams={character.dreams} />}
+        {activeTab === 'fears' && <FearsTab fears={character.fears} />}
       </main>
     </div>
   );
