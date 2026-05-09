@@ -1,347 +1,381 @@
-# SPEC.md — Roleplay Companion
+# Roleplay Companion — SPEC
 
-## 1. Panoramica del Progetto
+## 1. Concept & Vision
 
-**Nome:** Roleplay Companion  
-**Descrizione:** Applicazione desktop Electron per GDM (Group Direct Message) di roleplay su Telegram, con integrazione meeting per sessioni live asincrone e sincrone.  
-**Repository:** https://github.com/niccolocoppo88/roleplay-companion  
-**Board Kanban:** `roleplay-companion`  
-**Lingua documentazione:** Italiano (IT)
+**Cosa fa:** App desktop che assist Nico (giocatore D&D) durante le sessioni di gioco su Google Meet — analizza i transcript, genera suggerimenti in tempo reale dal punto di vista del suo PG, e dopo ogni sessione crea contenuti creativi (diario, canzoni, memorie, oggetti iconici) dal punto di vista del personaggio.
+
+**Chi la usa:** Solo Nico. Nessun auth, nessun login — app personale.
+
+**Il cuore dell'app:** Il profilo di ogni PG è un "living document" che cresce nel tempo — le sue motivazioni, i suoi piani a lungo termine, i suoi sogni e le sue paure. L'AI aiuta a mantenere questa coerenza e a farla evolvere.
 
 ---
 
-## 2. Architettura di Riferimento
+## 2. Architettura
 
-### 2.1 Frontend — Electron App (hermes-desktop-mission-control)
-
-L'app Electron di riferimento utilizza:
-
-- **Electron 28** + **React 18** + **TypeScript**
-- **Zustand** per state management
-- **TanStack Query** per data fetching
-- **Recharts** per grafici
-- **Tailwind CSS** per styling
-- **electron-vite** per build tooling
-- **Dark theme** con palette dedicata
-
-Struttura:
 ```
-electron/
-├── main.ts          # Main process entry
-├── preload.ts       # contextBridge API
-└── ipc/             # IPC handlers
-    ├── kanban.ts
-    ├── window.ts
-    └── logs.ts
-src/
-├── App.tsx           # Root component
-├── main.tsx          # React entry
-├── components/
-│   ├── layout/       # Sidebar, StatusBar, DetailPanel
-│   ├── board/        # BoardView, KanbanColumn, TaskCard
-│   ├── profiles/     # ProfilesView, ProfileDetail
-│   ├── logs/         # LogStreamView
-│   ├── stats/        # StatsView, MetricCard
-│   └── ui/           # Button, Input, Badge, Dropdown
-├── hooks/            # useKanban, useProfiles, useStats
-├── api/              # IPC client
-├── stores/           # Zustand store
-├── types/            # TypeScript types
-└── styles/           # Global CSS
+┌─────────────────────────────────────────────────────────────┐
+│  Electron App (React + TypeScript + Zustand)                │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
+│  │  Dashboard   │  │  PG Profile  │  │  Session Panel   │  │
+│  │  Campaigne   │  │  + Journal   │  │  (during Meet)   │  │
+│  └──────────────┘  └──────────────┘  └──────────────────┘  │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ IPC
+┌──────────────────────────┴──────────────────────────────────┐
+│  Python Backend (Electron main process)                     │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
+│  │  SQLite DB   │  │  Meet Plugin │  │  MiniMax API    │  │
+│  │  (local)     │  │  (transcrive)│  │  (generazione)  │  │
+│  └──────────────┘  └──────────────┘  └──────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 Plugin Google Meet
+**Plugin Meet:** Utilizza il plugin esistente `google_meet` di Hermes per:
+- `hermes meet join <url>` — entra nel Meet
+- `hermes meet transcript` — legge il transcript live
+- Il transcript viene parsato per identificare i momenti chiave
 
-Plugin Hermes esistente per meeting con:
-
-- **meet_join** — entra in una call Google Meet
-- **meet_leave** — esce dalla call
-- **meet_status** — stato del bot
-- **meet_transcript** — legge trascrizione live
-- **meet_say** — speak text in call (modalità realtime)
-
-Architettura:
-- Playwright per browser automation
-- MutationObserver per scraping captions
-- OpenAI Realtime per audio duplex (modalità v2)
-- Remote node host per esecuzione su macchina separata (v3)
+**LLM:** MiniMax 2.7 tramite l'MCP server `minimax` già configurato in Hermes.
 
 ---
 
 ## 3. Stack Tecnologico
 
-- **Frontend:** Electron 28, React 18, TypeScript
-- **State Management:** Zustand
-- **Data Fetching:** TanStack Query
-- **Styling:** Tailwind CSS
-- **Build Tool:** electron-vite
-- **Backend:** Hermes Agent (gateway + plugin system)
-- **Meeting Integration:** google_meet plugin (Playwright + OpenAI Realtime)
-- **Database:** SQLite (hermes_state.py session store)
-- **Platform:** macOS, Linux
+- **Frontend:** Electron 28, React 18, TypeScript, Zustand, Tailwind CSS
+- **Backend:** Python (Electron main process + IPC handlers)
+- **Database:** SQLite locale (nessun account, nessun costo, funziona offline)
+- **Meet Integration:** Plugin `google_meet` di Hermes (Playwright + captions scraping)
+- **LLM:** MiniMax 2.7 tramite MCP minimax (già configurato)
+- **Build:** electron-vite
 
 ---
 
-## 4. Milestone e Task Breakdown
+## 4. Data Model
 
-### M1: Auth & User Management
-**Obiettivo:** Sistema di autenticazione e gestione profili utente.
-
-**Task M1:**
-- [ ] M1-T1: Setup progetto Electron con electron-vite e TypeScript
-- [ ] M1-T2: Implementare sistema auth con JWT tokens
-- [ ] M1-T3: Creare database SQLite per utenti e sessioni
-- [ ] M1-T4: Implementare gestione profili (create, read, update, delete)
-- [ ] M1-T5: Creare UI per login/logout e profilo utente
-- [ ] M1-T6: Integrare con Hermes state management
-- [ ] M1-T7: Scrivere unit tests per auth module
-- [ ] M1-T8: Documentazione API auth
-
----
-
-### M2: Roleplay GDM System
-**Obiettivo:** Sistema completo per Group Direct Message di roleplay su Telegram.
-
-**Task M2:**
-- [ ] M2-T1: Progettare data model per GDM (gruppi, personaggi, storyline)
-- [ ] M2-T2: Implementare repository pattern per GDM entities
-- [ ] M2-T3: Creare servizio Telegram GDM con bot integration
-- [ ] M2-T4: Implementare gestione personaggi (character sheet, stats)
-- [ ] M2-T5: Sistema storyline con archi narrativi e branching
-- [ ] M2-T6: UI per creazione e gestione GDM
-- [ ] M2-T7: UI per character builder
-- [ ] M2-T8: UI per timeline/storyline editor
-- [ ] M2-T9: Integrazione with Hermes gateway per message routing
-- [ ] M2-T10: Unit tests per GDM core
-
----
-
-### M3: Meeting Integration
-**Obiettivo:** Integrazione con google_meet plugin per sessioni live.
-
-**Task M3:**
-- [ ] M3-T1: Wrapper TypeScript per google_meet plugin tools
-- [ ] M3-T2: UI per join/leave meeting
-- [ ] M3-T3: UI per visualizzazione transcript live
-- [ ] M3-T4: Implementare meeting controls (mute, leave, status)
-- [ ] M3-T5: Audio bridge setup UI (BlackHole/PulseAudio)
-- [ ] M3-T6: Realtime speech integration con meet_say
-- [ ] M3-T7: Notification system per eventi meeting
-- [ ] M3-T8: Error handling e retry logic
-- [ ] M3-T9: Tests per meeting integration
-
----
-
-### M4: Desktop UI & System Integration
-**Obiettivo:** UI Electron completa e integrazione sistema.
-
-**Task M4:**
-- [ ] M4-T1: Setup Electron main process con IPC handlers
-- [ ] M4-T2: Implementare dark theme system (ref. hermes-desktop-mission-control)
-- [ ] M4-T3: Creare layout components (Sidebar, StatusBar, DetailPanel)
-- [ ] M4-T4: Kanban board view con drag-and-drop
-- [ ] M4-T5: Profiles view e gestione specialist profiles
-- [ ] M4-T6: Log stream view real-time
-- [ ] M4-T7: Statistics dashboard con Recharts
-- [ ] M4-T8: System tray integration con quick actions
-- [ ] M4-T9: Keyboard shortcuts (Cmd+B toggle sidebar, etc.)
-- [ ] M4-T10: Window controls (minimize, maximize, close)
-- [ ] M4-T11: Build e packaging per distribuzione
-
----
-
-### M5: Plugin System & Extensibility
-**Obiettivo:** Sistema di plugin per estendere le funzionalità.
-
-**Task M5:**
-- [x] M5-T1: Definire plugin API e contract (shared/plugin.ts)
-- [ ] M5-T2: Implementare plugin loader con hot-reload
-- [ ] M5-T3: Creare plugin registry system
-- [ ] M5-T4: UI per plugin management (enable/disable/configure)
-- [ ] M5-T5: Documentazione per sviluppo plugin
-- [ ] M5-T6: Esempio plugin template
-- [ ] M5-T7: Integration tests per plugin system
-
----
-
-## 5. Data Model
-
-### User
+### Campaign
 ```
-id: string (UUID)
-username: string
-email: string
-password_hash: string
-created_at: datetime
-updated_at: datetime
-```
-
-### Character
-```
-id: string (UUID)
-user_id: string (FK)
+id: UUID
 name: string
-description: text
-avatar_url: string
-stats: JSON
-gdm_id: string (FK, optional)
-created_at: datetime
-```
-
-### GDM (Group Direct Message)
-```
-id: string (UUID)
-title: string
-description: text
-owner_id: string (FK)
-members: JSON (array of user_ids)
-characters: JSON (array of character_ids)
-status: enum (active, archived, completed)
-created_at: datetime
-updated_at: datetime
-```
-
-### Storyline
-```
-id: string (UUID)
-gdm_id: string (FK)
-title: string
-description: text
-arcs: JSON (branching narrative structure)
-current_node: string
-created_at: datetime
-```
-
-### Meeting
-```
-id: string (UUID)
-gdm_id: string (FK)
-meet_url: string
-status: enum (scheduled, active, completed)
-transcript_path: string
-started_at: datetime
-ended_at: datetime
-```
-
-### PluginInstance
-```
-instance_id: string (UUID)
-manifest: PluginManifest (inline JSON)
-status: enum (loading, enabled, disabled, error, uninstalling)
-config: JSON (user overrides)
-installed_at: datetime
-enabled_at: datetime (optional)
-root_path: string
-last_error: string (optional)
-```
-
-### PluginManifest
-```
-id: string (unique, e.g. "google-meet")
-name: string
-version: string (semver)
 description: string
-author: string
-homepage: string (optional)
-capabilities: string[] (capability flags)
-entry: string (module path, relative to plugin root)
-icon: string (optional, relative path)
-defaultConfig: JSON (optional)
-supportedHooks: string[]
+setting: string (world/ambientazione)
+status: "active" | "archived"
+created_at: datetime
+```
+
+### Character (PG)
+```
+id: UUID
+campaign_id: UUID (FK)
+name: string
+race: string
+class: string
+
+# Il cuore del personaggio
+backstory: text
+personality_traits: text
+motivations: text (short e long term)
+dreams: text (what the PG hopes for)
+fears: text (what the PG avoids)
+goals_long_term: text (obiettivi a lungo termine)
+goals_short_term: text (obiettivi immediati)
+
+# Tratti specifici per generazione contenuti
+musical_talent: boolean (può generare canzoni)
+writing_talent: boolean (può generare lettere/scritti)
+catchphrases: text[] (modi di dire del PG)
+iconic_items: text[] (oggetti iconici del PG)
+
+# Contatori per generazione
+sessions_played: int
+created_at: datetime
+updated_at: datetime
+```
+
+### Session
+```
+id: UUID
+campaign_id: UUID (FK)
+character_id: UUID (FK)
+title: string
+date: date
+duration_minutes: int
+meet_url: string
+transcript_path: string (path al file JSON del transcript)
+notes_gm: text (note del GM, opzionale)
+status: "pending" | "analyzed" | "completed"
+created_at: datetime
+```
+
+### GeneratedContent
+```
+id: UUID
+character_id: UUID (FK)
+session_id: UUID (FK, nullable)
+type: "journal" | "song" | "poetry" | "memory" | "catchphrase" | "item" | "letter" | "note"
+content: text (contenuto generato in italiano)
+context: text (riferimento al momento/motivazione)
+generated_at: datetime
+```
+
+### KeyMoment
+```
+id: UUID
+session_id: UUID (FK)
+transcript_excerpt: text
+interpretation: text (cosa è successo)
+pg_relevance: "high" | "medium" | "low"
+suggestion: text (cosa farebbe/dovrebbe fare il PG)
+created_at: datetime
 ```
 
 ---
 
-## 6. API Endpoints
+## 5. Milestones
 
-### Auth
-- `POST /auth/register` — Registra nuovo utente
-- `POST /auth/login` — Login e restituzione JWT
-- `POST /auth/refresh` — Refresh token
-- `POST /auth/logout` — Logout
+### M1: Foundation
+**Obiettivo:** App shell Electron funzionante + struttura database + UI base
 
-### Users
-- `GET /users/me` — Profilo utente corrente
-- `PUT /users/me` — Aggiorna profilo
-- `DELETE /users/me` — Elimina account
-
-### GDM
-- `GET /gdm` — Lista GDM dell'utente
-- `POST /gdm` — Crea nuovo GDM
-- `GET /gdm/:id` — Dettagli GDM
-- `PUT /gdm/:id` — Aggiorna GDM
-- `DELETE /gdm/:id` — Elimina GDM
-
-### Characters
-- `GET /characters` — Lista personaggi
-- `POST /characters` — Crea personaggio
-- `GET /characters/:id` — Dettagli personaggio
-- `PUT /characters/:id` — Aggiorna personaggio
-- `DELETE /characters/:id` — Elimina personaggio
-
-### Meetings
-- `POST /meetings/join` — join meeting (via google_meet plugin)
-- `POST /meetings/leave` — leave meeting
-- `GET /meetings/:id/status` — meeting status
-- `GET /meetings/:id/transcript` — meeting transcript
+**Task:**
+- [ ] M1-T1: Setup progetto Electron con electron-vite + React + TypeScript
+- [ ] M1-T2: Configurare Tailwind CSS con dark theme (ref: hermes-desktop-mission-control)
+- [ ] M1-T3: Creare database SQLite con schema completo
+- [ ] M1-T4: Implementare gestione campagne (CRUD)
+- [ ] M1-T5: Implementare gestione PG (CRUD completo)
+- [ ] M1-T6: UI Dashboard — lista campagne
+- [ ] M1-T7: UI Dettaglio campagna — lista PG
+- [ ] M1-T8: UI Profilo PG — tab principale con tutte le sezioni (journal, goals, dreams, fears, etc.)
 
 ---
 
-## 7. Color Palette (Dark Theme)
+### M2: Meet Integration
+**Obiettivo:** Collegamento al Meet, transcript parsing, identificazione momenti chiave
+
+**Task:**
+- [ ] M2-T1: Wrapper Python per `hermes meet join/leave/status/transcript`
+- [ ] M2-T2: IPC handlers per operazioni Meet (start/stop/status)
+- [ ] M2-T3: Transcript parser — estrae speaker + testo + timestamp
+- [ ] M2-T4: Key moment detector — identifica momenti rilevanti per il PG
+- [ ] M2-T5: UI "Sessione Attiva" — Join meeting + status + stop
+- [ ] M2-T6: Salvataggio transcript in sessione
+- [ ] M2-T7: Unit tests per Meet integration
+
+---
+
+### M3: Real-Time Suggestions
+**Ogettivo:** Suggerimenti dal punto di vista del PG durante la sessione
+
+**Task:**
+- [ ] M3-T1: Prompt engineer per suggerimenti PG (MiniMax)
+- [ ] M3-T2: Sistema di streaming suggerimenti (polling transcript + analisi)
+- [ ] M3-T3: Integrazione Telegram API per inviare suggerimenti in chat privata
+- [ ] M3-T4: UI configurazione — quale PG è "attivo" per questa sessione
+- [ ] M3-T5: Filtro momenti rilevanti — solo "high" e "medium" priorità
+- [ ] M3-T6: Rate limiting — non spammare, solo momenti veramente rilevanti
+- [ ] M3-T7: Tests per real-time suggestions
+
+---
+
+### M4: Post-Session Analysis & Generation
+**Obiettivo:** Dopo ogni sessione, generare contenuti dal punto di vista del PG
+
+**Task:**
+- [ ] M4-T1: Journal generator — prima persona, diario del PG post-sessione
+- [ ] M4-T2: Memory creator — identifica e salva i "momenti che il PG ricorda"
+- [ ] M4-T3: Catchphrase extractor — identifica battute/iconiche da aggiungere al PG
+- [ ] M4-T4: Song/poetry generator — per PG con musical_talent (testo + accordi piano)
+- [ ] M4-T5: Letter generator — per PG con writing_talent
+- [ ] M4-T6: Iconic item generator — descrizione oggetti memorabili trovati/creati
+- [ ] M4-T7: Goals updater — aggiorna long/short term goals in base alla sessione
+- [ ] M4-T8: Session summary UI — mostra tutti i contenuti generati post-sessione
+- [ ] M4-T9: Tests per generazione contenuti
+
+---
+
+### M5: Polish & The Heart of the Character
+**Obiettivo:** Affinare l'esperienza e rendere il profilo PG un "living document" completo
+
+**Task:**
+- [ ] M5-T1: Sezione "Dreaming!" — i sogni e le speranze del PG, aggiornati dall'AI
+- [ ] M5-T2: Sezione "Fears" — paure e cosa il PG evita
+- [ ] M5-T3: Sezione "Motivations" — motivazioni profonde del PG
+- [ ] M5-T4: Timeline del PG — cronologia eventi importanti
+- [ ] M5-T5: Consistency checker — warn se qualcosa contraddice il profilo
+- [ ] M5-T6: UI polish — animazioni, empty states, error handling
+- [ ] M5-T7: Build e packaging .app per macOS
+
+---
+
+## 6. Milestone Summary
+
+| Milestone | Focus | Task Count |
+|-----------|-------|------------|
+| M1 | Foundation — App shell, DB, UI base | 8 |
+| M2 | Meet Integration — Transcript + momenti chiave | 7 |
+| M3 | Real-Time Suggestions — Whisper al PG | 7 |
+| M4 | Post-Session Generation — Journal, canzoni, memorie | 9 |
+| M5 | Polish — Cuore del PG + packaging | 7 |
+| **Total** | | **38** |
+
+---
+
+## 7. UI Structure
+
+### Dashboard Campagne
+```
+[Campagna 1: Il Regno Perduto]     [Campagna 2: Le Terre Oscure]
+  Party: 4 PG                         Party: 3 PG
+  Ultima sessione: 2 giorni fa         Ultima sessione: 1 settimana fa
+  [Apri]                             [Apri]
+```
+
+### Dettaglio Campagna
+```
+Il Regno Perduto
+Ambientazione: Medioevo fantastico, regno in guerra
+
+PG attivi:
+  [Thorin ilnano] [Elara l'elfa] [Marco l'umano]
+  Inventario | Diario | Obiettivi | Sogni | Paure | Canzoni
+
+[Avvia Sessione]  [Nuovo PG]  [Archivia Campagna]
+```
+
+### Profilo PG (IL CUORE)
+```
+═══════════════════════════════════════════
+THORIN IL NANO
+Classe: Guerriero | Razza: Nano | Campagna: Il Regno Perduto
+═══════════════════════════════════════════
+
+[BACKSTORY]
+Thorin è un nano guerriero esiliato dalla sua clan per un atto
+di disonore che non ha commesso. Ora cerca di riconquistare
+l'onore perduto combattendo per il Regno.
+
+[GOALS LONG-TERM]
+☐ Riconquistare il mio posto nella clan
+☐ Trovare chi ha incastrato mio padre
+☐ Vendetta o giustizia? (non ho deciso)
+
+[GOALS SHORT-TERM]
+○ Scoprire cosa nasconde il consigliere del re
+○ Proteggere Elara (欠: mi fido troppo)
+
+[FEARS]
+✗ Il fuoco (memories di un incendio nella miniera)
+✗ Tradimento da parte di alleati
+
+[DREAMS]
+★ Un giorno avrò una birreria tutta mia
+★ Voglio che mio nipote sia fiero di me
+★ Una battaglia leggendaria che valga una saga
+
+[MUSICAL TALENT: YES]
+[CATCHPHRASES]
+- "Per il martello di mio padre!"
+- "Oro e birra, questo è ciò che conta"
+- "I nani non dimenticano mai... quasi mai"
+
+[ICONIC ITEMS]
+⚔ La Spada Spezzata (armi ancestrali, non ancora reclamata)
+🍺 Il Boccale Incantato (fa sembrare ogni birra la migliore mai bevuta)
+
+───────────────────────────────────────────
+SESSIONI
+───────────────────────────────────────────
+[Sessione 12] 2026-05-07  "La città sotto le montagne"
+  Journal: ✓ | Canzone: ✓ | Memoria: 3 | Catchphrase: 1
+  [Apri]
+
+[Sessione 11] 2026-05-01  "L'incontro col mercante"
+  Journal: ✓ | Canzone: - | Memoria: 1 | Catchphrase: 2
+  [Apri]
+
+───────────────────────────────────────────
+GENERATI
+───────────────────────────────────────────
+[Journal entries]
+[Canzoni & Poesie]  "La Ballata del Nano Errante"
+[Memorie]  "Il tradimento di Korgan"
+[Lettere]  "Lettera mai inviata a mio padre"
+───────────────────────────────────────────
+```
+
+### Sessione Attiva (During Meet)
+```
+┌─────────────────────────────────────────────┐
+│ SESSIONE ATTIVA — Il Regno Perduto          │
+│ PG: Thorin  |  Meet: meet.google.com/abc...  │
+│ [⏹ Stop Sessione]                           │
+├─────────────────────────────────────────────┤
+│ ULTIMO SUGGERIMENTO (12:34)                 │
+│                                             │
+│ "Thorin si fermerebbe qui. Ha visto         │
+│ qualcosa di strano nei panni del            │
+│ mercante — secondo lui è un segno.         │
+│ Potrebbe chiedere a Elara di verificare     │
+│ con la magia."                              │
+│                                             │
+│ [Momento chiave: Interazione sospetta]     │
+├─────────────────────────────────────────────┤
+│ MOMENTI SALVATI: 4                          │
+│ [Lista momenti della sessione]              │
+└─────────────────────────────────────────────┘
+```
+
+---
+
+## 8. Telegram Integration
+
+I suggerimenti real-time vengono inviati via **Telegram** alla chat privata di Nico.
+
+**Setup:**
+- Nico configura il suo `TELEGRAM_CHAT_ID` nelle settings dell'app
+- Quando il sistema rileva un momento chiave, manda un messaggio Telegram
+
+**Formato suggerimento:**
+```
+🎭 [THORIN — momento chiave]
+
+Thorin si fermerebbe qui. Ha visto qualcosa di strano nei panni del mercante — secondo lui è un segno. Potrebbe chiedere a Elara di verificare con la magia.
+
+⏱ 12:34 — Interazione sospetta
+```
+
+---
+
+## 9. Color Palette (Dark Theme)
 
 ```
 Background Primary:   #0D0F14
-Background Secondary:  #141720
+Background Secondary: #141720
 Background Tertiary:  #1C2030
-Accent Blue:          #4A9EFF
-Accent Green:         #3DD68C
-Accent Amber:         #FFB547
-Accent Red:          #FF6B6B
-Accent Purple:        #A78BFA
+Border Subtle:        #2A2F3D
+Text Primary:         #E8E9ED
+Text Secondary:       #9CA3AF
+Text Muted:           #6B7280
+Accent Blue:          #4A9EFF  (link, azioni)
+Accent Green:         #3DD68C  (successo, ok)
+Accent Amber:         #FFB547  (warning, attenzione)
+Accent Red:           #FF6B6B  (errore, paura)
+Accent Purple:        #A78BFA  (magia, sogni)
+Accent Gold:          #FFD700  (momenti leggendari)
 ```
 
 ---
 
-## 8. Dipendenze Esterne
-
-### NPM Packages
-```json
-{
-  "electron": "^28.0.0",
-  "react": "^18.2.0",
-  "react-dom": "^18.2.0",
-  "typescript": "^5.3.0",
-  "zustand": "^4.4.0",
-  "@tanstack/react-query": "^5.0.0",
-  "recharts": "^2.10.0",
-  "tailwindcss": "^3.4.0",
-  "electron-vite": "^2.0.0",
-  "@headlessui/react": "^1.7.0",
-  "lucide-react": "^0.300.0",
-  "electron-log": "^5.0.0"
-}
-```
-
-### Python Dependencies (via Hermes)
-- `playwright` — Browser automation
-- `websockets` — Real-time communication
-- `openai` — Realtime API per audio
-
----
-
-## 9. Struttura File Progetto
+## 10. Directory Structure
 
 ```
 roleplay-companion/
 ├── electron/
-│   ├── main.ts
-│   ├── preload.ts
+│   ├── main.ts              # Main process
+│   ├── preload.ts            # contextBridge
 │   └── ipc/
-│       ├── auth.ts
-│       ├── gdm.ts
-│       ├── characters.ts
-│       ├── meetings.ts
-│       └── window.ts
+│       ├── db.ts             # SQLite handlers
+│       ├── meet.ts           # Google Meet handlers
+│       ├── telegram.ts       # Telegram notification handlers
+│       └── generator.ts      # Content generation handlers
 ├── src/
 │   ├── App.tsx
 │   ├── main.tsx
@@ -349,54 +383,58 @@ roleplay-companion/
 │   │   ├── layout/
 │   │   │   ├── Sidebar.tsx
 │   │   │   ├── StatusBar.tsx
-│   │   │   └── DetailPanel.tsx
-│   │   ├── board/
-│   │   │   ├── BoardView.tsx
-│   │   │   ├── KanbanColumn.tsx
-│   │   │   └── TaskCard.tsx
-│   │   ├── auth/
-│   │   │   ├── LoginForm.tsx
-│   │   │   └── RegisterForm.tsx
-│   │   ├── gdm/
-│   │   │   ├── GDMList.tsx
-│   │   │   ├── GDMDetail.tsx
-│   │   │   └── GDMForm.tsx
-│   │   ├── characters/
+│   │   │   └── TitleBar.tsx
+│   │   ├── campaign/
+│   │   │   ├── CampaignList.tsx
+│   │   │   ├── CampaignDetail.tsx
+│   │   │   └── CampaignForm.tsx
+│   │   ├── character/
 │   │   │   ├── CharacterList.tsx
-│   │   │   ├── CharacterBuilder.tsx
-│   │   │   └── CharacterCard.tsx
-│   │   ├── meetings/
-│   │   │   ├── MeetingControls.tsx
-│   │   │   ├── TranscriptView.tsx
-│   │   │   └── AudioBridgeSetup.tsx
+│   │   │   ├── CharacterProfile.tsx
+│   │   │   ├── CharacterForm.tsx
+│   │   │   ├── tabs/
+│   │   │   │   ├── TabBackstory.tsx
+│   │   │   │   ├── TabGoals.tsx
+│   │   │   │   ├── TabDreams.tsx
+│   │   │   │   ├── TabFears.tsx
+│   │   │   │   ├── TabCatchphrases.tsx
+│   │   │   │   ├── TabItems.tsx
+│   │   │   │   └── TabGenerated.tsx
+│   │   │   └── SessionCard.tsx
+│   │   ├── session/
+│   │   │   ├── ActiveSession.tsx
+│   │   │   ├── SessionHistory.tsx
+│   │   │   └── SuggestionCard.tsx
 │   │   └── ui/
 │   │       ├── Button.tsx
 │   │       ├── Input.tsx
+│   │       ├── Textarea.tsx
 │   │       ├── Badge.tsx
-│   │       └── Dropdown.tsx
+│   │       ├── Card.tsx
+│   │       └── Modal.tsx
 │   ├── hooks/
-│   │   ├── useAuth.ts
-│   │   ├── useGDM.ts
+│   │   ├── useCampaigns.ts
 │   │   ├── useCharacters.ts
-│   │   └── useMeetings.ts
+│   │   ├── useSessions.ts
+│   │   └── useMeet.ts
 │   ├── stores/
-│   │   ├── authStore.ts
-│   │   ├── gdmStore.ts
-│   │   └── uiStore.ts
+│   │   ├── appStore.ts
+│   │   └── sessionStore.ts
 │   ├── api/
-│   │   ├── client.ts
-│   │   └── endpoints.ts
+│   │   └── ipc.ts
 │   ├── types/
-│   │   ├── auth.ts
-│   │   ├── gdm.ts
+│   │   ├── campaign.ts
 │   │   ├── character.ts
-│   │   └── meeting.ts
+│   │   ├── session.ts
+│   │   └── generated.ts
 │   └── styles/
 │       └── globals.css
+├── db/
+│   └── schema.sql
+├── src-tauri/   (se usiamo Tauri) o  build config
 ├── package.json
 ├── tsconfig.json
 ├── tailwind.config.js
-├── vite.config.ts
 ├── electron.vite.config.ts
 ├── SPEC.md
 └── README.md
@@ -404,49 +442,130 @@ roleplay-companion/
 
 ---
 
-## 10. Keyboard Shortcuts
+## 11. Key Implementation Notes
 
-- `Cmd/Ctrl+B` — Toggle sidebar
-- `Cmd/Ctrl+K` — Command palette (future)
-- `Cmd/Ctrl+N` — New GDM
-- `Cmd/Ctrl+,` — Settings
+### Transcript Parsing
+Il plugin `google_meet` fornisce il transcript come file JSON strutturato:
+```json
+[
+  {"speaker": "Nico", "text": "Thorin entra nella taverna...", "timestamp": 1700000000},
+  {"speaker": "GM", "text": "Il mercante ti guarda sospettosamente...", "timestamp": 1700000060}
+]
+```
+
+Il sistema aggrega i messaggi e cerca pattern che indicano momenti chiave:
+- Dialoghi rilevanti del PG
+- Decisioni menzionate
+- Interazioni con NPC
+- Tensione/combat
+
+### Key Moment Detection (MiniMax Prompt)
+```
+Analizza questo transcript di una sessione D&D.
+Il PG del giocatore è: [nome, backstory, personality traits, goals]
+
+Identifica i momenti chiave dove il PG avrebbe potuto/agito diversamente.
+Per ogni momento:
+1. Estratto rilevante dal transcript
+2. Cosa è successo
+3. Cosa farebbe/dovrebbe fare il PG in questo momento
+4. Priorità: high/medium/low
+
+Rispondi in italiano.
+```
+
+### Journal Generation (MiniMax Prompt)
+```
+Scrivi una entry del diario di [nome PG] dopo questa sessione di gioco.
+Stile: prima persona, come se il personaggio scrivesse nel suo diario la sera.
+Includi:
+- Cosa è successo (dal punto di vista del PG)
+- Come si sente il PG
+- Cosa ha imparato
+- Cosa计划 per il futuro
+- Un momento personale/sentimentale
+
+Lunghezza: 300-500 parole.
+Lingua: italiano.
+```
+
+### Song Generation (MiniMax Prompt)
+```
+Scrivi una canzone che [nome PG] (classe: [classe]) potrebbe comporre dopo questa avventura.
+Stile: ballata medievale/fantasy.
+Includi:
+- Strofe (3-4)
+- Ritornello
+- Accordi base per piano (in formato semplice: Am - G - F - E)
+
+La canzone deve riflettere [traits del PG] e cosa è successo nella sessione.
+Lingua: italiano.
+```
 
 ---
 
-## 11. Note di Implementazione
+## 12. API Endpoints (IPC)
 
-### Plugin Integration
-L'integrazione con il google_meet plugin segue il pattern esistente:
-1. Tool handlers esposti via `tools.py`
-2. Node client per remote hosting
-3. Process manager per bot lifecycle
-4. Audio bridge per realtime audio
+### Campaigns
+- `campaigns:list` → Campaign[]
+- `campaigns:create` → Campaign
+- `campaigns:get` → Campaign
+- `campaigns:update` → Campaign
+- `campaigns:delete` → void
 
-### State Management
-- Zustand per UI state locale
-- TanStack Query per server state
-- Hermes state (SQLite) per persistenza
+### Characters
+- `characters:list` (filter by campaign_id) → Character[]
+- `characters:create` → Character
+- `characters:get` → Character
+- `characters:update` → Character
+- `characters:delete` → void
 
-### IPC Communication
-- Main process gestisce native operations
-- Preload espone API sicura via contextBridge
-- Renderer usa IPC client per comunicazione
+### Sessions
+- `sessions:list` (filter by campaign_id, character_id) → Session[]
+- `sessions:create` → Session
+- `sessions:get` → Session
+- `sessions:update` → Session
+- `sessions:start-meet` → void (join meet)
+- `sessions:stop-meet` → void (leave meet)
+- `sessions:get-transcript` → TranscriptEntry[]
+- `sessions:get-suggestions` → Suggestion[]
+
+### Generated Content
+- `generated:list` (filter by character_id, session_id, type) → GeneratedContent[]
+- `generated:create` → GeneratedContent
+- `generated:get` → GeneratedContent
+
+### Key Moments
+- `moments:list` (filter by session_id) → KeyMoment[]
+- `moments:create` → KeyMoment
 
 ---
 
-## 12. Milestone Summary
+## 13. Configurazione
 
-| Milestone | Focus | Task Count |
-|-----------|-------|------------|
-| M1 | Auth & User Management | 8 |
-| M2 | Roleplay GDM System | 10 |
-| M3 | Meeting Integration | 9 |
-| M4 | Desktop UI & System | 11 |
-| M5 | Plugin System | 7 |
-| **Total** | | **45** |
+```typescript
+// Settings salvate in SQLite, tabella settings
+interface AppSettings {
+  telegram_chat_id: string;      // Chat ID per notifiche
+  minimax_api_key?: string;      // Opzionale, usa quella di Hermes se manca
+  meet_join_timeout: number;     // Secondi prima che il bot entri nel meet
+  suggestion_priority_filter: "high" | "medium" | "all";
+  auto_join_meet: boolean;       // Auto-join quando start session
+}
+```
 
 ---
 
-*Documento creato: 2026-05-08*
-*Ultimo aggiornamento: 2026-05-08*
+## 14. Non in Scope (v1)
+
+- ~~Auth/login~~ — solo Nico
+- ~~Multiplayer/sharing~~ — no
+- ~~Telegram bot per giocatori~~ — solo Nico riceve
+- ~~Suno/integratori musicali esterni~~ — generazione testo+accordi solo MiniMax
+- ~~Video/audio streaming~~ — solo trascrizione text
+- ~~Cloud DB~~ — SQLite locale
+
+---
+
+*Documento creato: 2026-05-09*
 *Versione: 1.0.0*
