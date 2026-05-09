@@ -5,12 +5,14 @@ import StatsTab from '../components/profile/StatsTab';
 import InventoryTab from '../components/profile/InventoryTab';
 import BiographyTab from '../components/profile/BiographyTab';
 import NotesTab from '../components/profile/NotesTab';
+import TimelineTab from '../components/profile/TimelineTab';
 
 const TABS = [
   { id: 'stats', label: 'Scheda', icon: '📋' },
   { id: 'inventory', label: 'Inventario', icon: '🎒' },
   { id: 'biography', label: 'Biografia', icon: '📖' },
   { id: 'notes', label: 'Note', icon: '📝' },
+  { id: 'timeline', label: 'Timeline', icon: '⏳' },
 ];
 
 export default function CharacterProfile() {
@@ -112,6 +114,7 @@ export default function CharacterProfile() {
         {activeTab === 'inventory' && <InventoryTab inventory={character.inventory} />}
         {activeTab === 'biography' && <BiographyTab biography={character.biography} />}
         {activeTab === 'notes' && <NotesTab notes={character.notes} />}
+        {activeTab === 'timeline' && <TimelineTab timeline={character.timeline} />}
       </main>
     </div>
   );

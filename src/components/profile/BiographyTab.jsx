@@ -25,7 +25,7 @@ export default function BiographyTab({ biography }) {
           <p className="text-sm text-text-secondary leading-relaxed">{biography.backstory}</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div className="card">
             <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wide mb-2">Tratti Personality</h3>
             <p className="text-sm text-text-primary italic">"{biography.personalityTraits}"</p>
@@ -38,9 +38,15 @@ export default function BiographyTab({ biography }) {
             <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wide mb-2">Legami</h3>
             <p className="text-sm text-text-primary">{biography.bonds}</p>
           </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
           <div className="card">
             <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wide mb-2">Difetti</h3>
             <p className="text-sm text-text-primary">{biography.flaws}</p>
+          </div>
+          <div className="card border-l-2 border-l-accent-danger">
+            <h3 className="text-sm font-semibold text-accent-danger uppercase tracking-wide mb-2">Paure</h3>
+            <p className="text-sm text-text-primary">{biography.fears}</p>
           </div>
         </div>
       </div>
