@@ -36,6 +36,10 @@ function App() {
   // Character modal state (for keyboard shortcut Cmd+Shift+N)
   const [showCreateCharacter, setShowCreateCharacter] = useState(false);
   const [characterModalCampaignId, setCharacterModalCampaignId] = useState(null);
+  // Quick create FAB menu
+  const [showFabMenu, setShowFabMenu] = useState(false);
+  // Keyboard shortcuts help
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   // Keyboard shortcuts
   const modalOpen = showCreate || editTarget || deleteTarget || showCreateCharacter || sessionSummary;
@@ -105,6 +109,14 @@ function App() {
             </div>
           </Link>
           <div className="flex items-center gap-3">
+            {/* Keyboard shortcuts help button */}
+            <button
+              onClick={() => setShowShortcuts(true)}
+              className="text-text-muted hover:text-text-primary text-sm p-2 rounded-lg hover:bg-bg-tertiary transition-colors font-medium"
+              title="Scorciatoie da tastiera"
+            >
+              ?
+            </button>
             <button
               onClick={() => setShowSettings(true)}
               className="text-text-muted hover:text-text-primary text-xl p-2 rounded-lg hover:bg-bg-tertiary transition-colors"
@@ -224,6 +236,65 @@ function App() {
       {/* Quick notes panel - needs campaign context */}
       {campaigns.length > 0 && (
         <NotesPanel campaignId={activeSession?.campaignId || 'default'} />
+      )}
+
+      {/* Floating Action Button (FAB) - Quick Create */}
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
+        {showFabMenu && (
+          <div className="bg-bg-secondary border border-border-primary rounded-lg shadow-xl p-2 flex flex-col gap-1 mb-2">
+            <button
+              onClick={() => { setShowCreate(true); setShowFabMenu(false); }}
+              className="fab-menu-item flex items-center gap-2 px-4 py-2 rounded-md hover:bg-bg-tertiary text-text-primary text-sm w-full text-left"
+            >
+              <span>📜</span> Nuova Campagna
+            </button>
+            <button
+              onClick={() => { /* opens character modal if context available */ setShowFabMenu(false); }}
+              className="fab-menu-item flex items-center gap-2 px-4 py-2 rounded-md hover:bg-bg-tertiary text-text-primary text-sm w-full text-left"
+            >
+              <span>👤</span> Nuovo Personaggio
+            </button>
+            <button
+              onClick={() => { /* trigger dice roller */ setShowFabMenu(false); }}
+              className="fab-menu-item flex items-center gap-2 px-4 py-2 rounded-md hover:bg-bg-tertiary text-text-primary text-sm w-full text-left"
+            >
+              <span>🎲</span> Lancia Dadi
+            </button>
+          </div>
+        )}
+        <button
+          onClick={() => setShowFabMenu(!showFabMenu)}
+          className={`fab-enter w-14 h-14 rounded-full bg-accent-primary text-bg-primary flex items-center justify-center text-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all ${showFabMenu ? 'rotate-45' : ''}`}
+          title="Azioni rapide"
+        >
+          +
+        </button>
+      </div>
+
+      {/* Keyboard Shortcuts Modal */}
+      {showShortcuts && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 modal-blur" onClick={() => setShowShortcuts(false)}>
+          <div className="bg-bg-secondary border border-border-primary rounded-xl p-6 w-96 max-w-[90vw] shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-text-primary">Scorciatoie da Tastiera</h2>
+              <button onClick={() => setShowShortcuts(false)} className="text-text-muted hover:text-text-primary text-xl">✕</button>
+            </div>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-text-secondary">Nuova campagna</span>
+                <kbd className="px-2 py-1 bg-bg-tertiary border border-border-primary rounded text-text-primary font-mono">⌘N</kbd>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-text-secondary">Nuovo personaggio</span>
+                <kbd className="px-2 py-1 bg-bg-tertiary border border-border-primary rounded text-text-primary font-mono">⌘⇧N</kbd>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-text-secondary">Chiudi modal</span>
+                <kbd className="px-2 py-1 bg-bg-tertiary border border-border-primary rounded text-text-primary font-mono">Esc</kbd>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -358,11 +429,24 @@ function CampaignCardEnhanced({ campaign, onEdit, onDelete, onStartSession }) {
     return d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
   };
 
+  // Compute campaign health based on recent activity
+  const getCampaignHealth = () => {
+    if (!lastSession) return 'danger'; // Never had a session
+    const diffDays = Math.floor((new Date() - new Date(lastSession?.date || lastSession?.created_at)) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 3) return 'healthy';
+    if (diffDays <= 14) return 'warning';
+    return 'danger';
+  };
+
+  const health = getCampaignHealth();
+
   return (
-    <div className="card-gradient group">
+    <div className="card-gradient card-gradient-hover group">
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-text-primary truncate">{campaign.name}</h3>
+          <h3 className="text-lg font-semibold text-text-primary truncate flex items-center gap-2">{campaign.name}
+            <span className={`health-dot ${health}`} title={`Stato: ${health === 'healthy' ? 'Attivo' : health === 'warning' ? 'Pausa' : 'Inattivo'}`}></span>
+          </h3>
           {campaign.description && (
             <p className="text-text-secondary text-sm mt-1 line-clamp-2">{campaign.description}</p>
           )}

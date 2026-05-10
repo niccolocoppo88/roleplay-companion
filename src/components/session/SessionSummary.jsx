@@ -13,6 +13,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from '../Toast';
 
 const TYPE_ICONS = {
   journal:    '📔',
@@ -534,15 +535,10 @@ export default function SessionSummary({ sessionId, campaignId, characterId, onD
       // Update local state
       setCharacter(prev => ({ ...prev, ...updateData }));
       
-      // Show toast — use static import from Toast module
-      import('../Toast').then(({ toast }) => {
-        toast('Contenuto salvato nel profilo!', 'success');
-      });
+      toast('Contenuto salvato nel profilo!', 'success');
     } catch (err) {
       console.error('Error saving to profile:', err);
-      import('../Toast').then(({ toast }) => {
-        toast('Errore nel salvataggio', 'error');
-      });
+      toast('Errore nel salvataggio', 'error');
     }
   }
 

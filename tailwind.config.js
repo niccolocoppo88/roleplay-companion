@@ -12,6 +12,7 @@ module.exports = {
         },
         border: {
           primary: '#2A2F3D',
+          subtle: '#2A2F3D',
           hover: '#484f58',
         },
         text: {
