@@ -65,27 +65,9 @@ export const MOCK_CHARACTERS = [
       { id: 'note-3', date: '2026-05-01', category: 'loot', content: 'Trovato: Elisir di Resistenza al Freddo (1), Pozione di Cura (2), 150 monete d\'oro.' },
     ],
     motivations: {
-      coreMotivation: 'Vendetta sacra — scoprire la verità sulla morte del mentore Sir Aldoran e distruggere il demone che lo ha ucciso, per dare pace alla sua anima.',
-      shortTermGoals: [
-        { id: 'mg-1', text: 'Indagare sulla torre del mage e scoprire la connessione col culto del drago nero', status: 'active', priority: 'high' },
-        { id: 'mg-2', text: 'Ritrovare il diario perduto di Sir Aldoran, contenente la sua ultima testimonianza', status: 'active', priority: 'medium' },
-        { id: 'mg-3', text: 'Proteggere il gruppo — specialmente Maron che si fida troppo dei forestieri', status: 'active', priority: 'medium' },
-      ],
-      longTermGoals: [
-        { id: 'mg-4', text: 'Sconfiggere il demone che ha ucciso Sir Aldoran e reclamare la sua arma leggendaria', status: 'pending', priority: 'critical' },
-        { id: 'mg-5', text: 'Riconquistare l\'onore dell\'Ordine del Sole d\'Argento — o crearne uno nuovo', status: 'pending', priority: 'high' },
-        { id: 'mg-6', text: 'Proteggere Valdros dalla minaccia del drago nero prima che distrugga il regno', status: 'pending', priority: 'high' },
-      ],
-      drivingValues: [
-        { id: 'dv-1', value: 'Onore', weight: 10, description: 'L\'onore è tutto. Un uomo senza onore è solo un cadavere che cammina.' },
-        { id: 'dv-2', value: 'Lealtà', weight: 9, description: 'Chi è mio alleato ha la mia lama al suo fianco, sempre.' },
-        { id: 'dv-3', value: 'Giustizia', weight: 8, description: 'Il bene deve trionfare sul male — non come идея, ma come azione concreta.' },
-      ],
-      externalPressures: [
-        { id: 'ep-1', pressure: 'Il culto del drago nero mi sta osservando — so che prima o poi verranno a prendermi', urgency: 'high' },
-        { id: 'ep-2', pressure: 'Il mio ex-ordine è stato screditato — molti credono fossimo traditori', urgency: 'medium' },
-        { id: 'ep-3', pressure: 'Torm mi ha mostrato una visione: se non agisco, Valdros cadrà entro un anno', urgency: 'critical' },
-      ],
+      primary: 'Vendetta sacra — scoprire la verità sulla morte del mentore Sir Aldoran e distruggere il demone che lo ha ucciso, per dare pace alla sua anima e onorare il suo sacrificio.',
+      secondary: 'Proteggere Valdros dalla minaccia del drago nero. La giustizia deve trionfare sul male, non come idea astratta ma come azione concreta. Un cavaliere senza causa è solo un guerriero senza meta.',
+      unconscious: 'Nel profondo, Eldric teme di non essere all\'altezza del suo mentore e che la sua fede in Torm stia vacillando. Non ammette a se stesso che cerca la vendetta non solo per onorare Sir Aldoran, ma per compensare il senso di colpa di essere sopravvissuto quando il suo maestro è morto.',
     },
     features: [
       { name: 'Sentiero del Devoto', description: 'Guadagni un livello di incantatore multi-classe in clerico. La tua voce sacra ti permette di lanciare spells.', source: 'Paladino' },

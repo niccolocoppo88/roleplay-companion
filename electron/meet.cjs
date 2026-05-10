@@ -29,8 +29,55 @@ const ELECTRON_PYTHON = path.join(__dirname, 'python');
 
 // ─── Meet session state ────────────────────────────────────────────────────────
 
-/** @type {{ pid: number, proc: import('child_process').ChildProcess, meetUrl: string } | null} */
+/** @type {{ pid: number, proc: import('child_process').ChildProcess, meetUrl: string, dbSessionId: string | null, startedAt: number } | null} */
 let activeSession = null;
+
+/** @type {object | null} */
+let _dbStmts = null;
+
+function setupDatabase(stmts) {
+  _dbStmts = stmts;
+}
+
+function _createDbSession(meetUrl) {
+  if (!_dbStmts) return null;
+  try {
+    const now = Date.now();
+    const id = require('crypto').randomUUID();
+    _dbStmts.insertSession.run({
+      id,
+      campaign_id: null,
+      character_id: null,
+      title: `Meet Session ${new Date().toLocaleString()}`,
+      meet_url: meetUrl,
+      started_at: now,
+      ended_at: null,
+      status: 'active',
+      created_at: now,
+    });
+    return id;
+  } catch (err) {
+    log.warn('_createDbSession error:', err.message);
+    return null;
+  }
+}
+
+function _endDbSession(sessionId, status) {
+  if (!_dbStmts || !sessionId) return;
+  try {
+    _dbStmts.updateSession.run({
+      id: sessionId,
+      title: null,
+      character_id: null,
+      meet_url: null,
+      started_at: null,
+      ended_at: Date.now(),
+      status: status ?? 'ended',
+    });
+  } catch (err) {
+    log.warn('_endDbSession error:', err.message);
+  }
+}
 
 // ─── hermes CLI helpers ────────────────────────────────────────────────────────
 
@@ -51,25 +98,44 @@ function startMeet(meetUrl) {
   });
   proc.stdout.on('data', (chunk) => { log.info(`[meet:stdout] ${chunk.toString().trim()}`); });
   proc.stderr.on('data', (chunk) => { log.warn(`[meet:stderr] ${chunk.toString().trim()}`); });
-  proc.on('exit', (code) => { log.info(`Meet process exited with code ${code}`); activeSession = null; });
-  proc.on('error', (err) => { log.error('Meet process error:', err); activeSession = null; });
-  activeSession = { pid: proc.pid, proc, meetUrl };
-  log.info(`Meet session started with PID ${proc.pid}`);
-  return { pid: proc.pid, url: meetUrl };
+  proc.on('exit', (code) => {
+    log.info(`Meet process exited with code ${code}`);
+    if (activeSession) {
+      _endDbSession(activeSession.dbSessionId, 'ended');
+      activeSession = null;
+    }
+  });
+  proc.on('error', (err) => {
+    log.error('Meet process error:', err);
+    if (activeSession) {
+      _endDbSession(activeSession.dbSessionId, 'error');
+      activeSession = null;
+    }
+  });
+  const startedAt = Date.now();
+  const dbSessionId = _createDbSession(meetUrl);
+  activeSession = { pid: proc.pid, proc, meetUrl, dbSessionId, startedAt };
+  log.info(`Meet session started with PID ${proc.pid}, dbSessionId=${dbSessionId}`);
+  return { pid: proc.pid, url: meetUrl, dbSessionId };
 }
 
 function stopMeet() {
   if (!activeSession) return { stopped: false, reason: 'No active session' };
-  const { proc } = activeSession;
+  const { proc, dbSessionId } = activeSession;
   log.info(`Stopping Meet session (PID ${proc.pid})`);
   try {
     proc.kill('SIGTERM');
     const timer = setTimeout(() => {
       if (!proc.killed) { log.warn('Meet process did not exit gracefully, sending SIGKILL'); proc.kill('SIGKILL'); }
     }, 3000);
-    proc.on('close', () => { clearTimeout(timer); activeSession = null; });
+    proc.on('close', () => {
+      clearTimeout(timer);
+      _endDbSession(dbSessionId, 'stopped');
+      activeSession = null;
+    });
   } catch (err) {
     log.error('Error stopping Meet session:', err);
+    _endDbSession(dbSessionId, 'error');
     activeSession = null;
     return { stopped: false, reason: err.message };
   }
@@ -149,11 +215,19 @@ function registerMeetHandlers() {
   // --- Meet lifecycle (hermes CLI) -----------------------------------------
   ipcMain.handle('meet:join', async (_, meetUrl) => {
     try {
-      if (!meetUrl || typeof meetUrl !== 'string') return { ok: false, error: 'meetUrl is required' };
-      if (!meetUrl.includes('meet.google.com') && !meetUrl.includes('jitsi')) return { ok: false, error: 'Invalid Meet URL' };
+      if (!meetUrl || typeof meetUrl !== 'string') return { ok: false, error: 'meetUrl è obbligatorio' };
+      if (!meetUrl.includes('meet.google.com') && !meetUrl.includes('jitsi')) return { ok: false, error: 'URL Meet non valido' };
       const result = startMeet(meetUrl);
       return { ok: true, data: result };
     } catch (err) { log.error('meet:join error', err); return { ok: false, error: err.message }; }
+  });
+
+  ipcMain.handle('meet:session_duration', async () => {
+    try {
+      if (!activeSession) return { ok: false, error: 'Nessuna sessione attiva' };
+      const durationSec = Math.floor((Date.now() - activeSession.startedAt) / 1000);
+      return { ok: true, data: { durationSec, startedAt: activeSession.startedAt } };
+    } catch (err) { log.error('meet:session_duration error', err); return { ok: false, error: err.message }; }
   });
 
   ipcMain.handle('meet:stop', async () => {

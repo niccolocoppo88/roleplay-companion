@@ -38,10 +38,21 @@ def _get_api_key() -> str:
 
 
 def _default_db_path() -> Path:
-    """Return path to roleplay-companion.db (same directory as hermes home)."""
-    # Mirror the approach used by meet_session_store — use ~/.hermes as base
-    hermes_home = Path.home() / ".hermes"
-    return hermes_home / "roleplay-companion.db"
+    """Return path to roleplay-companion.db — same location Electron uses."""
+    import os
+    home = Path.home()
+    fallback = home / '.hermes' / 'roleplay-companion.db'
+
+    # Try Electron userData path (macOS default)
+    for base in [
+        home / 'Library' / 'Application Support' / 'roleplay-companion',
+        home / '.hermes',
+    ]:
+        candidate = base / 'roleplay-companion.db'
+        if candidate.exists():
+            return candidate
+    # Fallback: return the legacy path (will be created on first write)
+    return fallback
 
 
 # -----------------------------------------------------------------------------

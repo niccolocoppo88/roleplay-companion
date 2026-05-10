@@ -135,7 +135,7 @@ class MeetingSessionStore:
         fields, vals = [], []
         for k, v in kw.items():
             if v is not None:
-                snake = k.lstrip('total_').lower()
+                snake = k.removeprefix('total_').lower()
                 fields.append(f"{snake} = ?")
                 vals.append(v)
         if not fields:
@@ -187,31 +187,29 @@ class MeetingSessionStore:
         now = time.time()
         inserted = 0
         for m in moments:
-            try:
-                ts_str = f"{m.timestamp.hour:02d}:{m.timestamp.minute:02d}:{m.timestamp.second:02d}"
-                self.conn.execute(
-                    """
-                    INSERT OR IGNORE INTO key_moments
-                        (session_id, kind, seconds, timestamp, speaker,
-                         text, summary, confidence, triggered_on, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        session_id,
-                        m.kind.value,
-                        m.seconds,
-                        ts_str,
-                        m.speaker,
-                        m.text,
-                        m.summary,
-                        m.confidence,
-                        m.triggered_on,
-                        now,
-                    ),
-                )
+            ts_str = f"{m.timestamp.hour:02d}:{m.timestamp.minute:02d}:{m.timestamp.second:02d}"
+            cursor = self.conn.execute(
+                """
+                INSERT OR IGNORE INTO key_moments
+                    (session_id, kind, seconds, timestamp, speaker,
+                     text, summary, confidence, triggered_on, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    session_id,
+                    m.kind.value,
+                    m.seconds,
+                    ts_str,
+                    m.speaker,
+                    m.text,
+                    m.summary,
+                    m.confidence,
+                    m.triggered_on,
+                    now,
+                ),
+            )
+            if cursor.rowcount > 0:
                 inserted += 1
-            except Exception:
-                pass
         self.conn.commit()
         return inserted
 

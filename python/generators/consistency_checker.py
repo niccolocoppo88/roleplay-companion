@@ -45,10 +45,16 @@ def _check_fears(character: dict, content: str) -> Optional[dict]:
                 if kw in content_lower:
                     positive_patterns = [
                         f"affronta {kw}",
+                        f"affronta il {kw}",
+                        f"affronta lo {kw}",
                         f"sfida {kw}",
+                        f"sfida le {kw}",
                         f"non ha paura di {kw}",
+                        f"non ha paura del {kw}",
                         f"ignora {kw}",
+                        f"ignora il {kw}",
                         f"disprezza {kw}",
+                        f"superare la paura di {kw}",
                     ]
                     if any(pat in content_lower for pat in positive_patterns):
                         return {

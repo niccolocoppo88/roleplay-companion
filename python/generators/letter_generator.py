@@ -40,9 +40,23 @@ def _get_api_key() -> str:
 
 
 def _default_db_path() -> Path:
-    """Return path to roleplay-companion.db (same directory as hermes home)."""
-    hermes_home = Path.home() / ".hermes"
-    return hermes_home / "roleplay-companion.db"
+    """Return path to roleplay-companion.db — same location Electron uses."""
+    import os
+    home = Path.home()
+    # Electron stores at ~/Library/Application Support/<app-name>/<db-name>
+    # On macOS: ~/Library/Application Support/roleplay-companion/roleplay-companion.db
+    fallback = home / '.hermes' / 'roleplay-companion.db'
+
+    # Try Electron userData path (macOS default)
+    for base in [
+        home / 'Library' / 'Application Support' / 'roleplay-companion',
+        home / '.hermes',
+    ]:
+        candidate = base / 'roleplay-companion.db'
+        if candidate.exists():
+            return candidate
+    # Fallback: return the legacy path (will be created on first write)
+    return fallback
 
 
 # -----------------------------------------------------------------------------
@@ -297,3 +311,34 @@ def _format_session_context(session: dict) -> str:
         parts.append(f"Finita: {datetime.fromtimestamp(ended, tz=timezone.utc).isoformat()}")
     parts.append(f"Linee transcript: {lines}")
     return "\n".join(parts)
+
+
+# ─── CLI entrypoint ─────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    import sys, json
+
+    if len(sys.argv) < 4:
+        print(json.dumps({"error": "Usage: letter_generator.py <session_id> <character_id> <recipient> <purpose>"}))
+        sys.exit(1)
+
+    session_id   = sys.argv[1]
+    character_id = sys.argv[2]
+    recipient    = sys.argv[3]
+    purpose      = sys.argv[4] if len(sys.argv) > 4 else ""
+
+    try:
+        record = generate_letter(session_id, character_id, recipient, purpose)
+        # Return a serialisable dict for the IPC caller
+        print(json.dumps({
+            "id":           record.id,
+            "character_id": record.character_id,
+            "session_id":   record.session_id,
+            "type":         record.type,
+            "content":      record.content,
+            "context":      record.context,
+            "generated_at": record.generated_at,
+        }))
+    except Exception as e:
+        print(json.dumps({"error": str(e)}))
+        sys.exit(1)

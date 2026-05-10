@@ -4,6 +4,7 @@ const log = require('electron-log');
 const db = require('./database.cjs');
 const meet = require('./meet.cjs');
 const consistency = require('./ipc/consistency.cjs');
+const generator = require('./ipc/generator.cjs');
 
 log.initialize();
 log.info('App starting...');
@@ -40,8 +41,12 @@ app.whenReady().then(() => {
   db.runMigrations();
   db.prepareStatements();
   db.registerHandlers();
+  db.prepareSettingsStatements();
+  db.registerSettingsHandlers();
   meet.registerMeetHandlers();
+  meet.setupDatabase(db._stmts);
   consistency.registerHandlers();
+  generator.registerHandlers();
   log.info('Database ready');
   createWindow();
 

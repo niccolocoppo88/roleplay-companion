@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 
 const CATEGORY_CONFIG = {
-  birth:     { icon: '🌱', label: 'Nascita',       color: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' },
-  milestone: { icon: '⚔️', label: 'Tappa',         color: 'bg-amber-500/20 border-amber-500/40 text-amber-400' },
-  death:     { icon: '💀', label: 'Morte',          color: 'bg-rose-500/20 border-rose-500/40 text-rose-400' },
-  session:   { icon: '🎲', label: 'Sessione',       color: 'bg-violet-500/20 border-violet-500/40 text-violet-400' },
-  secret:    { icon: '🔮', label: 'Segreto',        color: 'bg-fuchsia-500/20 border-fuchsia-500/40 text-fuchsia-400' },
+  birth:     { icon: '🌱', label: 'Nascita',      color: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' },
+  milestone: { icon: '⚔️', label: 'Tappa',        color: 'bg-amber-500/20 border-amber-500/40 text-amber-400' },
+  death:     { icon: '💀', label: 'Morte',         color: 'bg-rose-500/20 border-rose-500/40 text-rose-400' },
+  session:   { icon: '🎲', label: 'Sessione',      color: 'bg-violet-500/20 border-violet-500/40 text-violet-400' },
+  secret:    { icon: '🔮', label: 'Segreto',       color: 'bg-fuchsia-500/20 border-fuchsia-500/40 text-fuchsia-400' },
 };
 
 const IMPORTANCE_CONFIG = {

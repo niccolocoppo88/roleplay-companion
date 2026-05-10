@@ -3,14 +3,65 @@
  *
  * UI for the active session panel — shows session status, join/stop controls,
  * and live transcript line count. Integrates with the Meet IPC handlers.
+ * 
+ * Enhanced with session moments timeline and dice roller integration.
  */
 import React, { useState, useEffect, useCallback } from 'react';
+import SessionMoments from '../SessionMoments';
+import DiceRoller from '../DiceRoller';
 
 const STATUS_COLORS = {
   active: 'bg-accent-success',
   ended: 'bg-text-muted',
   error: 'bg-accent-danger',
 };
+
+function formatElapsed(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return h > 0
+    ? `${h}h ${m}m ${s}s`
+    : `${m}m ${s}s`;
+}
+
+// ─── Sound Effects ───────────────────────────────────────────────────────────
+
+const sounds = {
+  success: null, // Will be created on demand
+  notify: null,
+};
+
+// Initialize audio contexts lazily
+function playSound(type) {
+  try {
+    // Simple beep using Web Audio API
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    if (type === 'success') {
+      oscillator.frequency.value = 880;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } else {
+      oscillator.frequency.value = 440;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.15);
+    }
+  } catch { /* ignore */ }
+}
+
+export { playSound };
 
 export default function ActiveSession({ campaignId, characterId, onSessionEnd }) {
   const [meetUrl, setMeetUrl] = useState('');
@@ -23,7 +74,7 @@ export default function ActiveSession({ campaignId, characterId, onSessionEnd })
 
   // Tick the elapsed timer while session is active
   useEffect(() => {
-    if (!sessionId || status !== 'active') return;
+    if (!sessionId) return;
     const interval = setInterval(async () => {
       try {
         const res = await window.meetAPI.status(sessionId);
@@ -37,7 +88,7 @@ export default function ActiveSession({ campaignId, characterId, onSessionEnd })
       } catch { /* ignore */ }
     }, 5000);
     return () => clearInterval(interval);
-  }, [sessionId, status]);
+  }, [sessionId]);
 
   const handleJoin = useCallback(async () => {
     if (!meetUrl.trim()) {
@@ -85,19 +136,10 @@ export default function ActiveSession({ campaignId, characterId, onSessionEnd })
     }
   }, [sessionId, campaignId, characterId, onSessionEnd]);
 
-  const formatElapsed = (seconds) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    return h > 0
-      ? `${h}h ${m}m ${s}s`
-      : `${m}m ${s}s`;
-  };
-
   // ── Session is running ──────────────────────────────────────────────────────
   if (sessionId && status === 'active') {
     return (
-      <div className="card border border-accent-success/50">
+      <div className="card border border-accent-success/50 card-gradient">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -106,6 +148,10 @@ export default function ActiveSession({ campaignId, characterId, onSessionEnd })
               <span className="absolute inset-0 rounded-full bg-accent-success opacity-50 animate-ping" />
             </div>
             <span className="text-accent-success font-semibold">Sessione Attiva</span>
+            {/* Timer Badge */}
+            <span className="ml-2 px-2 py-0.5 bg-bg-tertiary rounded text-xs font-mono text-text-secondary">
+              ⏱ {formatElapsed(elapsed)}
+            </span>
           </div>
           <button
             onClick={handleStop}
@@ -127,6 +173,28 @@ export default function ActiveSession({ campaignId, characterId, onSessionEnd })
             <p className="text-text-primary font-mono font-semibold">{lineCount}</p>
           </div>
         </div>
+
+        {/* Mark Important Moment Button */}
+        <button 
+          onClick={() => {
+            const note = prompt('Nota per questo momento (opzionale):');
+            try {
+              window.db.moments.create({
+                session_id: sessionId,
+                note: note?.trim() || '',
+                timestamp_ms: elapsed * 1000,
+              });
+              playSound('notify');
+            } catch { /* ignore */ }
+          }}
+          className="moment-mark-btn w-full flex items-center justify-center gap-2 mb-4"
+        >
+          <span>⭐</span>
+          <span>Segna momento importante</span>
+        </button>
+
+        {/* Session Moments Timeline */}
+        <SessionMoments sessionId={sessionId} />
 
         {/* Meet URL */}
         <div className="bg-bg-tertiary rounded-lg p-3">

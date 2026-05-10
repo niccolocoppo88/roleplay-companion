@@ -1,245 +1,203 @@
 import React, { useState } from 'react';
 
-const PRIORITY_COLORS = {
-  critical: 'border-accent-danger text-accent-danger',
-  high: 'border-accent-warning text-accent-warning',
-  medium: 'border-accent-primary text-accent-primary',
-  low: 'border-text-muted text-text-muted',
+const MOTIVATION_ICONS = {
+  primary: '🎯',
+  secondary: '🔥',
+  unconscious: '👁️',
 };
 
-const STATUS_BADGES = {
-  active: 'bg-accent-success/20 text-accent-success border border-accent-success/30',
-  pending: 'bg-text-muted/20 text-text-muted border border-text-muted/30',
-  completed: 'bg-accent-primary/20 text-accent-primary border border-accent-primary/30',
+const MOTIVATION_LABELS = {
+  primary: 'Motivazione Primaria',
+  secondary: 'Motivazione Secondaria',
+  unconscious: 'Motivazione Inconscia',
 };
 
-const URGENCY_COLORS = {
-  critical: 'bg-accent-danger/10 border-l-2 border-l-accent-danger',
-  high: 'bg-accent-warning/10 border-l-2 border-l-accent-warning',
-  medium: 'bg-accent-primary/10 border-l-2 border-l-accent-primary',
+const MOTIVATION_COLORS = {
+  primary: 'text-accent-primary border-accent-primary',
+  secondary: 'text-accent-warning border-accent-warning',
+  unconscious: 'text-purple-400 border-purple-400',
 };
+
+const MOTIVATION_DESCRIPTIONS = {
+  primary: 'La spinta principale che guida tutte le azioni del personaggio',
+  secondary: 'La motivazione di supporto che rafforza il cammino',
+  unconscious: 'Ciò che il personaggio non riconosce consciamente',
+};
+
+const PRIORITY_ORDER = ['primary', 'secondary', 'unconscious'];
 
 export default function MotivationsTab({ motivations }) {
-  const [activeSection, setActiveSection] = useState('core');
+  const [expandedSection, setExpandedSection] = useState(null);
+  const [sortByPriority, setSortByPriority] = useState(true);
 
-  const sections = [
-    { id: 'core', label: 'Cuore', icon: '🔥' },
-    { id: 'shortTerm', label: 'Obiettivi Breve Termine', icon: '🎯' },
-    { id: 'longTerm', label: 'Obiettivi Lungo Termine', icon: '🏔️' },
-    { id: 'values', label: 'Valori Dirimpettai', icon: '⚖️' },
-    { id: 'pressure', label: 'Pressioni Esterne', icon: '⏰' },
-  ];
+  if (!motivations) {
+    return (
+      <div className="p-6">
+        <div className="card p-8 text-center text-text-muted">
+          <div className="text-4xl mb-3">🎯</div>
+          <p className="text-text-muted">Nessuna motivazione registrata per questo personaggio.</p>
+          <p className="text-xs text-text-muted mt-2">Le motivazioni verranno generate automaticamente durante le sessioni</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Build sections array with priority sorting
+  const sections = PRIORITY_ORDER
+    .filter(key => motivations[key])
+    .map(key => ({
+      key,
+      data: motivations[key],
+      priority: PRIORITY_ORDER.indexOf(key),
+    }));
+
+  // If not sorting by priority, use original order
+  const sortedSections = sortByPriority
+    ? [...sections].sort((a, b) => a.priority - b.priority)
+    : sections;
 
   return (
     <div className="p-6">
-      {/* Section Navigation */}
-      <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
-        {sections.map(section => (
-          <button
-            key={section.id}
-            onClick={() => setActiveSection(section.id)}
-            className={`
-              flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all
-              ${activeSection === section.id
-                ? 'bg-accent-primary text-bg-primary'
-                : 'bg-bg-tertiary text-text-muted hover:text-text-secondary hover:bg-bg-secondary border border-border-primary'
-              }
-            `}
-          >
-            <span>{section.icon}</span>
-            <span>{section.label}</span>
-          </button>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-text-secondary text-sm max-w-lg">
+          Le motivazioni sono il motore segreto delle azioni. Alcune sono chiare, altre si nascondono nell'ombra della coscienza.
+        </p>
+        <button
+          onClick={() => setSortByPriority(!sortByPriority)}
+          className={`
+            px-3 py-1.5 text-xs rounded-full border flex items-center gap-2 transition-colors
+            ${sortByPriority 
+              ? 'bg-accent-primary/20 border-accent-primary/60 text-accent-primary' 
+              : 'border-border-primary text-text-muted hover:border-border-hover'
+            }
+          `}
+          title={sortByPriority ? 'Ordinate per priorità' : 'Ordine predefinito'}
+        >
+          <span>📊</span>
+          <span>Priorità</span>
+          <span className={`text-text-muted transition-transform ${sortByPriority ? 'rotate-180' : ''}`}>
+            ↓
+          </span>
+        </button>
+      </div>
+
+      {/* Priority badges */}
+      <div className="flex items-center gap-3 mb-6">
+        <span className="text-xs text-text-muted">Priority:</span>
+        {PRIORITY_ORDER.map((key, idx) => (
+          <div key={key} className="flex items-center gap-1.5">
+            <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-xs font-bold ${
+              key === 'primary' ? 'border-accent-primary text-accent-primary' :
+              key === 'secondary' ? 'border-accent-warning text-accent-warning' :
+              'border-purple-400 text-purple-400'
+            }`}>
+              {idx + 1}
+            </span>
+            <span className="text-xs text-text-muted">{MOTIVATION_LABELS[key]}</span>
+          </div>
         ))}
       </div>
 
-      {/* Core Motivation — Hero Section */}
-      {activeSection === 'core' && (
-        <div className="max-w-2xl">
-          <div className="card border-l-4 border-l-accent-danger">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-2xl">🔥</span>
-              <h3 className="text-sm font-semibold text-accent-danger uppercase tracking-wide">Motivazione Centrale</h3>
-            </div>
-            <p className="text-lg text-text-primary leading-relaxed italic">
-              "{motivations.coreMotivation}"
-            </p>
-          </div>
+      {/* Motivation Sections - sorted by priority */}
+      <div className="space-y-4">
+        {sortedSections.map(({ key, data }) => {
+          if (!data) return null;
 
-          {/* Quick Overview Cards */}
-          <div className="grid grid-cols-3 gap-4 mt-6">
-            <div className="card text-center">
-              <div className="text-3xl mb-2">🎯</div>
-              <div className="text-2xl font-bold text-accent-primary">{motivations.shortTermGoals.filter(g => g.status === 'active').length}</div>
-              <div className="text-xs text-text-muted uppercase tracking-wide">Obiettivi Attivi</div>
-            </div>
-            <div className="card text-center">
-              <div className="text-3xl mb-2">🏔️</div>
-              <div className="text-2xl font-bold text-accent-warning">{motivations.longTermGoals.filter(g => g.status === 'pending').length}</div>
-              <div className="text-xs text-text-muted uppercase tracking-wide">Missioni in Attesa</div>
-            </div>
-            <div className="card text-center">
-              <div className="text-3xl mb-2">⚖️</div>
-              <div className="text-2xl font-bold text-accent-primary">{motivations.drivingValues.length}</div>
-              <div className="text-xs text-text-muted uppercase tracking-wide">Valori Cardine</div>
-            </div>
-          </div>
-        </div>
-      )}
+          const isExpanded = expandedSection === key;
+          const colorClass = MOTIVATION_COLORS[key];
+          const borderColor = colorClass.split(' ')[1];
+          const priorityNum = PRIORITY_ORDER.indexOf(key) + 1;
 
-      {/* Short Term Goals */}
-      {activeSection === 'shortTerm' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wide">
-              Obiettivi a Breve Termine
-            </h3>
-            <span className="text-xs text-text-muted">
-              {motivations.shortTermGoals.filter(g => g.status === 'active').length} attivi
-            </span>
-          </div>
-          {motivations.shortTermGoals.map(goal => (
-            <GoalCard key={goal.id} goal={goal} />
-          ))}
-        </div>
-      )}
-
-      {/* Long Term Goals */}
-      {activeSection === 'longTerm' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wide">
-              Missioni a Lungo Termine
-            </h3>
-            <span className="text-xs text-text-muted">
-              {motivations.longTermGoals.filter(g => g.status === 'pending').length} in attesa
-            </span>
-          </div>
-          {motivations.longTermGoals.map(goal => (
-            <GoalCard key={goal.id} goal={goal} />
-          ))}
-        </div>
-      )}
-
-      {/* Driving Values */}
-      {activeSection === 'values' && (
-        <div className="space-y-6">
-          <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wide">
-            Valori che Guidano le Scelte
-          </h3>
-          <div className="grid grid-cols-1 gap-4">
-            {motivations.drivingValues
-              .sort((a, b) => b.weight - a.weight)
-              .map(value => (
-                <div key={value.id} className="card">
-                  <div className="flex items-start gap-4">
-                    {/* Weight indicator */}
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="text-2xl font-bold text-accent-warning">{value.weight}</div>
-                      <div className="text-xs text-text-muted">peso</div>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h4 className="text-lg font-semibold text-text-primary">{value.value}</h4>
-                      </div>
-                      <p className="text-sm text-text-secondary leading-relaxed italic">
-                        "{value.description}"
-                      </p>
-                    </div>
-                    {/* Visual weight bar */}
-                    <div className="w-24 self-center">
-                      <div className="h-2 bg-bg-tertiary rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-accent-warning rounded-full transition-all duration-300"
-                          style={{ width: `${(value.weight / 10) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
-
-      {/* External Pressures */}
-      {activeSection === 'pressure' && (
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wide mb-4">
-            Pressioni che Sfuggono al Controllo
-          </h3>
-          {motivations.externalPressures
-            .sort((a, b) => {
-              const order = { critical: 0, high: 1, medium: 2 };
-              return order[a.urgency] - order[b.urgency];
-            })
-            .map(pressure => (
-              <div
-                key={pressure.id}
-                className={`card ${URGENCY_COLORS[pressure.urgency] || ''}`}
+          return (
+            <div
+              key={key}
+              className="card border-l-4"
+              style={{ borderLeftColor: `var(--${borderColor.replace('accent-', '')})` }}
+            >
+              {/* Section Header */}
+              <button
+                onClick={() => setExpandedSection(isExpanded ? null : key)}
+                className="w-full flex items-center justify-between p-4 hover:bg-bg-tertiary transition-colors"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <p className="text-sm text-text-primary leading-relaxed">{pressure.pressure}</p>
-                  </div>
-                  <span className={`text-xs px-2 py-1 rounded-full uppercase tracking-wide font-medium ${
-                    pressure.urgency === 'critical' ? 'bg-accent-danger/20 text-accent-danger' :
-                    pressure.urgency === 'high' ? 'bg-accent-warning/20 text-accent-warning' :
-                    'bg-accent-primary/20 text-accent-primary'
-                  }`}>
-                    {pressure.urgency}
+                <div className="flex items-center gap-3">
+                  {/* Priority badge */}
+                  <span className={`
+                    w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold
+                    ${key === 'primary' ? 'border-accent-primary text-accent-primary' :
+                      key === 'secondary' ? 'border-accent-warning text-accent-warning' :
+                      'border-purple-400 text-purple-400'}
+                  `}>
+                    {priorityNum}
                   </span>
+                  
+                  <span className="text-2xl">{MOTIVATION_ICONS[key]}</span>
+                  <div className="text-left">
+                    <h3 className={`font-semibold ${colorClass.split(' ')[0]}`}>
+                      {MOTIVATION_LABELS[key]}
+                    </h3>
+                    <p className="text-xs text-text-muted mt-0.5">
+                      {MOTIVATION_DESCRIPTIONS[key]}
+                    </p>
+                  </div>
                 </div>
+                <span className={`text-text-muted transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </button>
+
+              {/* Section Content */}
+              {isExpanded && (
+                <div className="px-4 pb-4 pt-0">
+                  <div className="border-t border-border-primary pt-4">
+                    <p className="text-text-primary leading-relaxed whitespace-pre-wrap">
+                      {data}
+                    </p>
+                  </div>
+                  {key === 'unconscious' && (
+                    <div className="mt-3 flex items-center gap-2 text-xs text-text-muted">
+                      <span>🔒</span>
+                      <span>Motivazione inconscia - visibile solo a te</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Motivation Summary */}
+      <div className="mt-6 card bg-bg-tertiary p-4">
+        <h4 className="text-sm font-semibold text-text-secondary mb-3">Riepilogo Motivazioni</h4>
+        <div className="grid grid-cols-3 gap-4 text-center">
+          {PRIORITY_ORDER.map((key, idx) => (
+            <div key={key}>
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <span className={`
+                  w-5 h-5 rounded-full border flex items-center justify-center text-xs font-bold
+                  ${key === 'primary' ? 'border-accent-primary text-accent-primary' :
+                    key === 'secondary' ? 'border-accent-warning text-accent-warning' :
+                    'border-purple-400 text-purple-400'}
+                `}>
+                  {idx + 1}
+                </span>
               </div>
-            ))}
+              <div className="text-lg font-bold text-text-primary">
+                {motivations[key] ? getWordCount(motivations[key]) : 0}
+              </div>
+              <div className="text-xs text-text-muted">
+                {key === 'primary' ? 'Primaria' : key === 'secondary' ? 'Secondaria' : 'Inconscia'}
+              </div>
+            </div>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }
 
-function GoalCard({ goal }) {
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <div className={`card cursor-pointer transition-all hover:border-border-hover ${expanded ? 'border-border-hover' : ''}`}>
-      <div
-        className="flex items-start gap-4"
-        onClick={() => setExpanded(!expanded)}
-      >
-        {/* Status indicator */}
-        <div className={`mt-0.5 w-3 h-3 rounded-full ${
-          goal.status === 'active' ? 'bg-accent-success' :
-          goal.status === 'completed' ? 'bg-accent-primary' : 'bg-text-muted'
-        }`} />
-
-        {/* Content */}
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <p className="text-sm text-text-primary font-medium">{goal.text}</p>
-            <span className={`text-xs px-2 py-0.5 rounded-full uppercase tracking-wide ${
-              PRIORITY_COLORS[goal.priority] || PRIORITY_COLORS.low
-            }`}>
-              {goal.priority}
-            </span>
-          </div>
-
-          {expanded && (
-            <div className="mt-3 pt-3 border-t border-border-primary">
-              <div className="flex items-center gap-4 text-xs text-text-muted">
-                <span className={`px-2 py-1 rounded-full uppercase tracking-wide font-medium ${STATUS_BADGES[goal.status]}`}>
-                  {goal.status}
-                </span>
-                <span>Priorità: {goal.priority}</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Expand icon */}
-        <span className={`text-text-muted text-sm transition-transform ${expanded ? 'rotate-180' : ''}`}>
-          ▼
-        </span>
-      </div>
-    </div>
-  );
+function getWordCount(text) {
+  if (!text) return 0;
+  return text.trim().split(/\s+/).filter(w => w.length > 0).length;
 }

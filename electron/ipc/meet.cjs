@@ -172,17 +172,18 @@ function getTranscript() {
 
 function registerHandlers() {
   // meet:join — start a Meet session
-  ipcMain.handle('meet:join', async (_, meetUrl) => {
+  ipcMain.handle('meet:join', async (_, opts) => {
     try {
+      const meetUrl = opts?.url;
       if (!meetUrl || typeof meetUrl !== 'string') {
-        return { ok: false, error: 'meetUrl is required' };
+        return { ok: false, error: 'Inserisci un URL Google Meet valido' };
       }
       // Basic URL validation
       if (!meetUrl.includes('meet.google.com') && !meetUrl.includes('jitsi')) {
-        return { ok: false, error: 'Invalid Meet URL' };
+        return { ok: false, error: 'URL Meet non valido' };
       }
       const result = startMeet(meetUrl);
-      return { ok: true, data: result };
+      return { ok: true, data: { sessionId: result.pid, url: meetUrl } };
     } catch (err) {
       log.error('meet:join error', err);
       return { ok: false, error: err.message };

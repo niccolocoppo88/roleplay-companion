@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const STAT_LABELS = {
   strength: 'For',
@@ -7,6 +7,15 @@ const STAT_LABELS = {
   intelligence: 'Int',
   wisdom: 'Sag',
   charisma: 'Car',
+};
+
+const STAT_FULL_NAMES = {
+  strength: 'Forza',
+  dexterity: 'Destrezza',
+  constitution: 'Costituzione',
+  intelligence: 'Intelligenza',
+  wisdom: 'Sagezza',
+  charisma: 'Carisma',
 };
 
 const SKILL_MAP = {
@@ -18,11 +27,140 @@ const SKILL_MAP = {
   charisma: ['Inganno', 'Intimidazione', 'Intrattenimento', 'Persuasione'],
 };
 
+/**
+ * Calculate D&D 5e ability score modifier
+ */
+function getModifier(score) {
+  const mod = Math.floor((score - 10) / 2);
+  return mod;
+}
+
+/**
+ * Format modifier with sign
+ */
+function formatModifier(mod) {
+  return mod >= 0 ? `+${mod}` : `${mod}`;
+}
+
+/**
+ * Roll a d20
+ */
+function rollD20() {
+  return Math.floor(Math.random() * 20) + 1;
+}
+
+/**
+ * Roll ability check (d20 + modifier)
+ */
+function rollAbilityCheck(score, proficiency = 0, proficiencyBonus = 0) {
+  const d20 = rollD20();
+  const mod = getModifier(score);
+  const total = d20 + mod + (proficiency ? proficiencyBonus : 0);
+  return { d20, mod, proficiencyBonus: proficiency ? proficiencyBonus : 0, total };
+}
+
 export default function StatsTab({ character }) {
   const { stats, savingThrows, skills, spellcasting } = character;
+  const [rollResult, setRollResult] = useState(null);
+  const [rollingStat, setRollingStat] = useState(null);
+
+  /**
+   * Handle clicking on an ability score to roll
+   */
+  function handleRollStat(stat) {
+    setRollingStat(stat);
+    const result = rollAbilityCheck(stats[stat], false, 0);
+    setRollResult(result);
+    
+    // Clear result after 3 seconds
+    setTimeout(() => {
+      setRollResult(null);
+      setRollingStat(null);
+    }, 3000);
+  }
+
+  /**
+   * Handle rolling a saving throw
+   */
+  function handleRollSavingThrow(st) {
+    const result = rollAbilityCheck(stats[st.stat], st.proficient, character.proficiencyBonus);
+    setRollResult({ ...result, type: 'saving', stat: st.stat });
+    
+    setTimeout(() => {
+      setRollResult(null);
+    }, 3000);
+  }
+
+  /**
+   * Handle rolling a skill check
+   */
+  function handleRollSkill(skill) {
+    const statMod = getModifier(stats[skill.stat]);
+    const prof = skill.proficient ? character.proficiencyBonus : 0;
+    const d20 = rollD20();
+    const total = d20 + statMod + prof;
+    
+    setRollResult({
+      d20,
+      mod: statMod,
+      proficiencyBonus: prof,
+      total,
+      type: 'skill',
+      skillName: skill.name,
+    });
+    
+    setTimeout(() => {
+      setRollResult(null);
+    }, 3000);
+  }
 
   return (
     <div className="p-6 grid grid-cols-12 gap-6">
+      {/* Roll Result Display */}
+      {rollResult && (
+        <div className="col-span-12 mb-4">
+          <div className={`card border-2 ${rollingStat ? 'border-accent-primary' : 'border-accent-success'} p-4`}>
+            <div className="flex items-center justify-center gap-6">
+              <div className="text-center">
+                <div className="text-xs text-text-muted uppercase tracking-wide mb-1">d20</div>
+                <div className="text-4xl font-bold text-text-primary">{rollResult.d20}</div>
+              </div>
+              <div className="text-2xl text-text-muted">+</div>
+              <div className="text-center">
+                <div className="text-xs text-text-muted uppercase tracking-wide mb-1">Mod</div>
+                <div className="text-2xl font-bold text-accent-primary">{formatModifier(rollResult.mod)}</div>
+              </div>
+              {rollResult.proficiencyBonus > 0 && (
+                <>
+                  <div className="text-2xl text-text-muted">+</div>
+                  <div className="text-center">
+                    <div className="text-xs text-text-muted uppercase tracking-wide mb-1">Prof</div>
+                    <div className="text-2xl font-bold text-accent-success">+{rollResult.proficiencyBonus}</div>
+                  </div>
+                </>
+              )}
+              <div className="text-2xl text-text-muted">=</div>
+              <div className="text-center">
+                <div className="text-xs text-text-muted uppercase tracking-wide mb-1">Totale</div>
+                <div className={`text-4xl font-bold ${rollResult.total >= 15 ? 'text-accent-success' : rollResult.total >= 10 ? 'text-accent-primary' : 'text-accent-danger'}`}>
+                  {rollResult.total}
+                </div>
+              </div>
+            </div>
+            {rollResult.type === 'skill' && (
+              <p className="text-center text-sm text-text-muted mt-2">
+                Prova di {rollResult.skillName}
+              </p>
+            )}
+            {rollResult.type === 'saving' && (
+              <p className="text-center text-sm text-text-muted mt-2">
+                Tiro Salvezza di {STAT_FULL_NAMES[rollResult.stat]}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Left column: Stats + Saving throws */}
       <div className="col-span-3 space-y-6">
         {/* Stats block */}
@@ -30,23 +168,27 @@ export default function StatsTab({ character }) {
           <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wide mb-4">Caratteristiche</h3>
           <div className="space-y-3">
             {Object.entries(stats).map(([stat, value]) => {
-              const mod = Math.floor((value - 10) / 2);
-              const sign = mod >= 0 ? '+' : '';
+              const mod = getModifier(value);
               return (
                 <div key={stat} className="flex items-center gap-3">
                   <span className="text-xs font-bold text-accent-primary w-6">{STAT_LABELS[stat]}</span>
-                  <div className="flex-1 flex items-center gap-2">
-                    <div className="w-10 h-10 rounded bg-bg-tertiary border border-border-primary flex items-center justify-center">
+                  <div 
+                    className="flex-1 flex items-center gap-2 cursor-pointer hover:bg-bg-tertiary rounded p-1 transition-colors"
+                    onClick={() => handleRollStat(stat)}
+                    title={`Click per tirare ${STAT_FULL_NAMES[stat]} (1d20 + ${formatModifier(mod)})`}
+                  >
+                    <div className="w-10 h-10 rounded bg-bg-tertiary border border-border-primary flex items-center justify-center cursor-pointer hover:border-accent-primary transition-colors">
                       <span className="text-sm font-bold text-text-primary">{value}</span>
                     </div>
                     <span className={`text-sm font-medium ${mod >= 0 ? 'text-accent-success' : 'text-text-muted'}`}>
-                      {sign}{mod}
+                      {formatModifier(mod)}
                     </span>
                   </div>
                 </div>
               );
             })}
           </div>
+          <p className="text-xs text-text-muted mt-3 text-center">Click su un punteggio per tirare</p>
         </div>
 
         {/* Saving throws */}
@@ -54,15 +196,19 @@ export default function StatsTab({ character }) {
           <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wide mb-3">Tiri Salvezza</h3>
           <div className="space-y-1">
             {savingThrows.map((st, i) => {
-              const mod = Math.floor((stats[st.stat] - 10) / 2);
-              const sign = mod >= 0 ? '+' : '';
+              const mod = getModifier(stats[st.stat]);
               return (
-                <div key={i} className="flex items-center gap-2 text-sm">
+                <div 
+                  key={i} 
+                  className="flex items-center gap-2 text-sm cursor-pointer hover:bg-bg-tertiary rounded px-1 py-0.5 transition-colors"
+                  onClick={() => handleRollSavingThrow(st)}
+                  title={`Tira ${STAT_FULL_NAMES[st.stat]} (1d20 + ${formatModifier(mod)}${st.proficient ? ` + ${character.proficiencyBonus}` : ''})`}
+                >
                   <span className={`w-4 text-center ${st.proficient ? 'text-accent-primary' : 'text-text-muted'}`}>
                     {st.proficient ? '●' : '○'}
                   </span>
                   <span className="text-text-secondary w-6">{STAT_LABELS[st.stat]}</span>
-                  <span className="text-text-primary font-medium">{sign}{st.value}</span>
+                  <span className="text-text-primary font-medium">{formatModifier(mod)}{st.proficient ? ` +${character.proficiencyBonus}` : ''}</span>
                 </div>
               );
             })}
@@ -77,7 +223,7 @@ export default function StatsTab({ character }) {
           <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wide mb-4">Combat</h3>
           <div className="grid grid-cols-4 gap-4">
             <CombatStat label="CA" value={character.armorClass} />
-            <CombatStat label="Initiativa" value={`+${Math.floor((stats.dexterity - 10) / 2)}`} />
+            <CombatStat label="Initiativa" value={formatModifier(getModifier(stats.dexterity))} />
             <CombatStat label="Velocità" value={`${character.speed} ft`} />
             <CombatStat label="Temp PF" value={character.hitPoints.temp || '—'} />
           </div>
@@ -104,22 +250,27 @@ export default function StatsTab({ character }) {
           <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wide mb-3">Abilità</h3>
           <div className="grid grid-cols-2 gap-1">
             {skills.map((skill, i) => {
-              const statMod = Math.floor((stats[skill.stat] - 10) / 2);
-              const sign = skill.value >= 0 ? '+' : '';
+              const statMod = getModifier(stats[skill.stat]);
               return (
-                <div key={i} className="flex items-center gap-2 py-1">
+                <div 
+                  key={i} 
+                  className="flex items-center gap-2 py-1 cursor-pointer hover:bg-bg-tertiary rounded px-1 transition-colors"
+                  onClick={() => handleRollSkill(skill)}
+                  title={`Tira ${skill.name} (1d20 + ${formatModifier(statMod)}${skill.proficient ? ` + ${character.proficiencyBonus}` : ''})`}
+                >
                   <span className={`w-4 text-center text-xs ${skill.proficient ? 'text-accent-primary' : 'text-text-muted'}`}>
                     {skill.proficient ? '●' : '○'}
                   </span>
                   <span className="text-text-muted text-xs w-16">{skill.name}</span>
                   <span className="text-text-secondary text-xs">{STAT_LABELS[skill.stat]}</span>
                   <span className={`text-sm font-medium ml-auto ${skill.value >= 0 ? 'text-text-primary' : 'text-text-muted'}`}>
-                    {sign}{skill.value}
+                    {skill.value >= 0 ? '+' : ''}{skill.value}
                   </span>
                 </div>
               );
             })}
           </div>
+          <p className="text-xs text-text-muted mt-3 text-center">Click su un'abilità per tirare</p>
         </div>
       </div>
 
